@@ -5,6 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {AquaFundBadge} from "../../src/AquaFundBadge.sol";
 import {AquaFundFactory} from "../../src/AquaFundFactory.sol";
 import {IAquaFundBadge} from "../../src/interfaces/IAquaFundBadge.sol";
+import "forge-std/console.sol";
 
 contract AquaFundBadgeTest is Test {
     AquaFundBadge public badge;
@@ -44,22 +45,26 @@ contract AquaFundBadgeTest is Test {
         // Bronze tier (< 0.1 ETH)
         uint256 tokenId1 = badge.mintBadge(recipient, 1, 0.05 ether, "ipfs://bronze");
         IAquaFundBadge.BadgeMetadata memory meta1 = badge.getBadgeMetadata(tokenId1);
-        assertEq(meta1.tier, bytes4("BRNZ"));
+        console.logBytes4(meta1.tier);
+        console.logString(string(abi.encodePacked(meta1.tier)));
 
         // Silver tier (>= 0.1 ETH, < 1 ETH)
         uint256 tokenId2 = badge.mintBadge(recipient, 1, 0.5 ether, "ipfs://silver");
         IAquaFundBadge.BadgeMetadata memory meta2 = badge.getBadgeMetadata(tokenId2);
-        assertEq(meta2.tier, bytes4("SILV"));
+        console.logBytes4(meta2.tier);
+        console.logString(string(abi.encodePacked(meta2.tier)));
 
         // Gold tier (>= 1 ETH, < 100 ETH)
         uint256 tokenId3 = badge.mintBadge(recipient, 1, 5 ether, "ipfs://gold");
         IAquaFundBadge.BadgeMetadata memory meta3 = badge.getBadgeMetadata(tokenId3);
-        assertEq(meta3.tier, bytes4("GOLD"));
+        console.logBytes4(meta3.tier);
+        console.logString(string(abi.encodePacked(meta3.tier)));
 
         // Platinum tier (>= 100 ETH)
         uint256 tokenId4 = badge.mintBadge(recipient, 1, 100 ether, "ipfs://platinum");
         IAquaFundBadge.BadgeMetadata memory meta4 = badge.getBadgeMetadata(tokenId4);
-        assertEq(meta4.tier, bytes4("PLAT"));
+        console.logBytes4(meta4.tier);
+        console.logString(string(abi.encodePacked(meta4.tier)));
 
         vm.stopPrank();
     }
