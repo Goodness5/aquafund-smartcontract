@@ -35,7 +35,7 @@ contract AquaFundBadgeTest is Test {
 
         assertEq(badge.balanceOf(recipient), 1);
         assertEq(badge.ownerOf(tokenId), recipient);
-        assertEq(badge.tokenURI(tokenId), tokenUri);
+        assertEq(badge.tokenURI(tokenId), string(abi.encodePacked("https://api.aquafund.io/badges/", tokenUri)));
     }
 
     function test_MintBadge_TierClassification() public {

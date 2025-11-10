@@ -80,49 +80,20 @@ contract AquaFundFactoryTest is Test {
         factory.createProject(admin, FUNDING_GOAL, METADATA_URI);
     }
 
-    function test_UpdateServiceFee() public {
-        vm.prank(admin);
-        factory.updateServiceFee(1500); // 15%
-
-        assertEq(factory.getServiceFee(), 1500);
-    }
-
-    function test_UpdateServiceFee_Unauthorized() public {
-        vm.prank(address(0x999));
-        vm.expectRevert();
-        factory.updateServiceFee(2000);
-    }
-
-    function test_UpdateServiceFee_MaxLimit() public {
-        vm.prank(admin);
-        vm.expectRevert();
-        factory.updateServiceFee(6000); // 60% - exceeds max
-    }
-
-    function test_UpdateTreasury() public {
-        address newTreasury = address(0x5);
-
-        vm.prank(admin);
-        factory.updateTreasury(newTreasury);
-
-        assertEq(factory.getTreasury(), newTreasury);
-    }
-
     function test_AddAllowedToken() public {
+        factory.grantRole(factory.ADMIN_ROLE(), admin);
         vm.prank(admin);
         factory.addAllowedToken(address(mockToken));
-
         assertTrue(factory.isTokenAllowed(address(mockToken)));
-        assertTrue(factory.isTokenAllowed(address(0))); // ETH always allowed
+        assertTrue(factory.isTokenAllowed(address(0)));
     }
 
     function test_RemoveAllowedToken() public {
+        factory.grantRole(factory.ADMIN_ROLE(), admin);
         vm.prank(admin);
         factory.addAllowedToken(address(mockToken));
-
         vm.prank(admin);
         factory.removeAllowedToken(address(mockToken));
-
         assertFalse(factory.isTokenAllowed(address(mockToken)));
     }
 
@@ -222,17 +193,43 @@ contract AquaFundFactoryTest is Test {
         factory.mintBadgeForDonor(donor, 999, 1 ether, "ipfs://test");
     }
 
+    function test_UpdateServiceFee() public {
+        factory.grantRole(factory.ADMIN_ROLE(), admin);
+        vm.prank(admin);
+        factory.updateServiceFee(1500); // 15%
+
+        assertEq(factory.getServiceFee(), 1500);
+    }
+
+    function test_UpdateServiceFee_Unauthorized() public {
+        vm.prank(address(0x999));
+        vm.expectRevert();
+        factory.updateServiceFee(2000);
+    }
+
+    function test_UpdateServiceFee_MaxLimit() public {
+        vm.prank(admin);
+        vm.expectRevert();
+        factory.updateServiceFee(6000); // 60% - exceeds max
+    }
+
+    function test_UpdateTreasury() public {
+        factory.grantRole(factory.ADMIN_ROLE(), admin);
+        address newTreasury = address(0x5);
+        vm.prank(admin);
+        factory.updateTreasury(newTreasury);
+        assertEq(factory.getTreasury(), newTreasury);
+    }
+
     function test_PauseUnpause() public {
+        factory.grantRole(factory.ADMIN_ROLE(), admin);
         vm.prank(admin);
         factory.pause();
-
         vm.prank(projectCreator);
         vm.expectRevert();
         factory.createProject(admin, FUNDING_GOAL, METADATA_URI);
-
         vm.prank(admin);
         factory.unpause();
-
         vm.prank(projectCreator);
         address projectAddr = factory.createProject(admin, FUNDING_GOAL, METADATA_URI);
         assertTrue(projectAddr != address(0));

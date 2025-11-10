@@ -85,6 +85,7 @@ contract AquaFundProjectTest is Test {
         // Fund addresses
         vm.deal(donor, 100 ether);
         vm.deal(admin, 100 ether);
+        mockToken.mint(donor, 1_000 * 10**18);
     }
 
     function test_CreateProject() public {
@@ -117,12 +118,11 @@ contract AquaFundProjectTest is Test {
         IAquaFundProject.ProjectInfo memory infoBefore = project.getProjectInfo();
         assertEq(infoBefore.projectId, projectId);
 
-        vm.prank(donor);
+        vm.startPrank(donor);
         vm.expectEmit(true, true, false, true);
         emit DonationReceived(projectId, donor, DONATION_AMOUNT, true, block.timestamp);
-
-        vm.prank(donor);
         project.donate{value: DONATION_AMOUNT}();
+        vm.stopPrank();
 
         IAquaFundProject.ProjectInfo memory info = project.getProjectInfo();
         assertEq(info.fundsRaised, DONATION_AMOUNT);
@@ -136,12 +136,11 @@ contract AquaFundProjectTest is Test {
         AquaFundProject project = AquaFundProject(payable(projectAddr));
         uint256 amount = 1000 * 10**18;
 
-        // Approve and donate
-        vm.prank(donor);
+        // Approve and donate (single prank/donor section)
+        vm.startPrank(donor);
         mockToken.approve(address(project), amount);
-
-        vm.prank(donor);
         project.donateToken(address(mockToken), amount);
+        vm.stopPrank();
 
         IAquaFundProject.ProjectInfo memory info = project.getProjectInfo();
         assertEq(info.fundsRaised, amount);
@@ -209,12 +208,11 @@ contract AquaFundProjectTest is Test {
         uint256 balanceBefore = admin.balance;
         uint256 treasuryBefore = treasury.balance;
 
-        vm.prank(admin);
+        vm.startPrank(admin);
         vm.expectEmit(true, true, false, true);
         emit FundsReleased(1, admin, FUNDING_GOAL * 9 / 10, FUNDING_GOAL / 10);
-
-        vm.prank(admin);
         project.releaseFunds();
+        vm.stopPrank();
 
         IAquaFundProject.ProjectInfo memory info = project.getProjectInfo();
         assertEq(uint256(info.status), uint256(IAquaFundProject.ProjectStatus.Completed));

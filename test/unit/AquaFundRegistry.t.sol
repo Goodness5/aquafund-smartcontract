@@ -50,22 +50,16 @@ contract AquaFundRegistryTest is Test {
     function test_GetPlatformStats() public {
         vm.prank(admin);
         address project1Addr = factory.createProject(projectAdmin, 10 ether, keccak256("p1"));
-
         vm.prank(admin);
         address project2Addr = factory.createProject(projectAdmin, 20 ether, keccak256("p2"));
-
         AquaFundProject project1 = AquaFundProject(payable(project1Addr));
         AquaFundProject project2 = AquaFundProject(payable(project2Addr));
-
         vm.deal(donor, 100 ether);
         vm.prank(donor);
         project1.donate{value: 10 ether}();
-
         vm.prank(donor);
         project2.donate{value: 20 ether}();
-
         AquaFundRegistry.PlatformStats memory stats = registry.getPlatformStats();
-
         assertEq(stats.totalProjects, 2);
         assertEq(stats.totalFundsRaised, 30 ether);
         assertEq(stats.totalDonors, 1);
