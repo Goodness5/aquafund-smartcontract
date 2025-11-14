@@ -18,7 +18,7 @@ build:
     # Build the documentation (output will be in docs/book/)
     - cd docs && mdbook build
 
-# Specify the output directory for the built documentation
+# Use HTML builder for custom builds
 # mdBook outputs to docs/book/ by default
 html:
   builder: html
