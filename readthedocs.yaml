@@ -15,11 +15,9 @@ build:
     - curl -L https://github.com/rust-lang/mdBook/releases/download/v0.4.36/mdbook-v0.4.36-x86_64-unknown-linux-gnu.tar.gz | tar xz
     - mv mdbook /usr/local/bin/
     - chmod +x /usr/local/bin/mdbook
-    # Build the documentation (output will be in docs/book/)
+    # Build the documentation
+    # mdBook outputs to docs/book/ by default
     - cd docs && mdbook build
-
-# Use HTML builder for custom builds
-# mdBook outputs to docs/book/ by default
-html:
-  builder: html
-  path: docs/book/
+    # Read the Docs expects output in _build/html, so we copy it there
+    - mkdir -p _build/html
+    - cp -r docs/book/* _build/html/
