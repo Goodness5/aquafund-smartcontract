@@ -88,9 +88,27 @@ AquaFund uses a factory pattern with minimal proxies (EIP-1167) for gas-efficien
 - **OpenZeppelin AccessControl**: Role-based permissions
 - **Roles**:
   - `DEFAULT_ADMIN_ROLE`: Full system admin
-  - `ADMIN_ROLE`: Factory admin (fee updates, etc.)
-  - `PROJECT_CREATOR_ROLE`: Can create projects
+  - `ADMIN_ROLE`: Factory admin (fee updates, grants PROJECT_CREATOR_ROLE, etc.)
+  - `PROJECT_CREATOR_ROLE`: Can create projects (granted to verified NGOs/organizations)
   - `MINTER_ROLE`: Can mint badges
+
+### Role Hierarchy
+
+**Factory Admin** (`ADMIN_ROLE`):
+- Manages platform settings (fees, treasury)
+- Grants/revokes `PROJECT_CREATOR_ROLE` to NGOs
+- Can pause project creation
+
+**Project Creator** (`PROJECT_CREATOR_ROLE`):
+- Granted by factory admin to verified NGOs/organizations
+- Can call `createProject()` to create new projects
+- When creating a project, specifies a `projectAdminAddress`
+
+**Project Admin**:
+- The address specified when creating a project
+- Becomes the owner of that specific project contract
+- Can release funds, submit evidence, update status, issue refunds for that project only
+- Different from the project creator (can be the same address, but doesn't have to be)
 
 ### Reentrancy Protection
 - `ReentrancyGuard` on all state-changing functions
@@ -120,13 +138,19 @@ AquaFund uses a factory pattern with minimal proxies (EIP-1167) for gas-efficien
 
 ### 1. Project Creation
 ```
-Admin with PROJECT_CREATOR_ROLE
+Factory Admin (ADMIN_ROLE)
     ↓
-Factory.createProject()
+Grants PROJECT_CREATOR_ROLE to NGO
+    ↓
+NGO with PROJECT_CREATOR_ROLE
+    ↓
+Factory.createProject(projectAdminAddress, ...)
     ↓
 Clone created (minimal proxy)
     ↓
-Project.initialize() called
+Project.initialize() called with projectAdminAddress
+    ↓
+Project ownership transferred to projectAdminAddress
     ↓
 Project registered in Factory & Registry
 ```

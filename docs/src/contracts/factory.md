@@ -23,8 +23,22 @@ Projects are created using the **minimal proxy pattern** (EIP-1167) for gas effi
 
 ### Roles
 
-- `ADMIN_ROLE` - Can update fees, treasury, and platform settings
-- `PROJECT_CREATOR_ROLE` - Can create new projects
+- `ADMIN_ROLE` - Can update fees, treasury, platform settings, and grant/revoke PROJECT_CREATOR_ROLE
+- `PROJECT_CREATOR_ROLE` - Can create new projects (granted to verified NGOs/organizations)
+
+### Important Distinction: Project Creator vs Project Admin
+
+**Project Creator** (has `PROJECT_CREATOR_ROLE`):
+- This is the NGO or organization account that has been granted permission to create projects
+- Must be granted `PROJECT_CREATOR_ROLE` by a factory admin
+- Can call `createProject()` to create new projects
+- Different from the project admin
+
+**Project Admin** (passed as parameter to `createProject()`):
+- This is the address that will manage the specific project
+- Becomes the owner of that project contract
+- Can release funds, submit evidence, update status, and issue refunds for that project
+- Can be the same as the project creator, but doesn't have to be
 
 ## Reading Factory Data
 
@@ -94,12 +108,42 @@ console.log('Projects:', projectIds.map((id, i) => ({
 
 ## Creating Projects
 
-### Create a New Project
+### Granting Project Creator Role (Admin Only)
 
-**Note:** You need the `PROJECT_CREATOR_ROLE` to create projects.
+Before an NGO or organization can create projects, they must be granted the `PROJECT_CREATOR_ROLE` by a factory admin.
 
 ```javascript
-async function createProject(adminAddress, fundingGoalInEth, metadataIpfsHash) {
+// Admin grants PROJECT_CREATOR_ROLE to an NGO
+async function grantProjectCreatorRole(ngoAddress) {
+  const factory = new ethers.Contract(factoryAddress, FactoryABI, signer);
+  
+  try {
+    const tx = await factory.grantProjectCreatorRole(ngoAddress);
+    await tx.wait();
+    console.log('Project creator role granted to:', ngoAddress);
+  } catch (error) {
+    if (error.message.includes('UnauthorizedAccess')) {
+      throw new Error('Only admins can grant project creator role');
+    }
+    throw error;
+  }
+}
+
+// Revoke project creator role if needed
+async function revokeProjectCreatorRole(ngoAddress) {
+  const factory = new ethers.Contract(factoryAddress, FactoryABI, signer);
+  const tx = await factory.revokeProjectCreatorRole(ngoAddress);
+  await tx.wait();
+  console.log('Project creator role revoked from:', ngoAddress);
+}
+```
+
+### Create a New Project
+
+**Note:** You need the `PROJECT_CREATOR_ROLE` to create projects. This role is granted to verified NGOs/organizations by factory admins.
+
+```javascript
+async function createProject(projectAdminAddress, fundingGoalInEth, metadataIpfsHash) {
   const factory = new ethers.Contract(factoryAddress, FactoryABI, signer);
   
   try {
@@ -108,7 +152,7 @@ async function createProject(adminAddress, fundingGoalInEth, metadataIpfsHash) {
     const metadataUri = ethers.hexlify(ethers.toUtf8Bytes(metadataIpfsHash));
     
     const tx = await factory.createProject(
-      adminAddress,
+      projectAdminAddress,  // This becomes the project admin
       ethers.parseEther(fundingGoalInEth.toString()),
       metadataUri
     );
@@ -128,7 +172,7 @@ async function createProject(adminAddress, fundingGoalInEth, metadataIpfsHash) {
       console.log('Project created:', {
         projectId: decoded.args.projectId.toString(),
         projectAddress: decoded.args.projectAddress,
-        admin: decoded.args.admin,
+        projectAdmin: decoded.args.admin,  // This is the project admin
         fundingGoal: ethers.formatEther(decoded.args.fundingGoal)
       });
     }
@@ -136,19 +180,34 @@ async function createProject(adminAddress, fundingGoalInEth, metadataIpfsHash) {
     return receipt;
   } catch (error) {
     if (error.message.includes('UnauthorizedAccess')) {
-      throw new Error('You do not have permission to create projects');
+      throw new Error('You do not have PROJECT_CREATOR_ROLE. Contact an admin to grant you this role.');
     }
     throw error;
   }
 }
 
-// Usage
+// Usage: NGO with PROJECT_CREATOR_ROLE creates a project
+// The projectAdminAddress can be the NGO's own address or a different address
 await createProject(
-  '0x...', // Admin address
+  '0x...', // Project admin address (will manage this specific project)
   10,      // 10 ETH funding goal
   'Qm...'  // IPFS hash of project metadata
 );
 ```
+
+### Understanding Project Admin
+
+The `projectAdminAddress` passed to `createProject()` becomes the **project admin** for that specific project. This admin can:
+- Release funds from the project
+- Submit evidence
+- Update project status
+- Issue refunds
+
+**Note:** The project admin is different from:
+- The factory admin (has `ADMIN_ROLE`)
+- The project creator (has `PROJECT_CREATOR_ROLE`)
+
+The project admin only has control over the specific project they were assigned to.
 
 ## Token Management
 

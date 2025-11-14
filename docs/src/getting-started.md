@@ -62,6 +62,16 @@ const factoryAddress = '0x...';
 const factory = new web3.eth.Contract(FactoryABI, factoryAddress);
 ```
 
+## Understanding Roles
+
+Before you start, it's important to understand the different roles in AquaFund:
+
+- **Factory Admin** (`ADMIN_ROLE`): Manages the platform (fees, treasury, grants roles)
+- **Project Creator** (`PROJECT_CREATOR_ROLE`): Can create new projects (granted to verified NGOs)
+- **Project Admin**: Manages a specific project (releases funds, submits evidence)
+
+When a project is created, the creator (with `PROJECT_CREATOR_ROLE`) specifies a `projectAdminAddress` that will manage that project.
+
 ## Common Tasks
 
 ### 1. Connect Wallet

@@ -40,6 +40,16 @@ If you're new to AquaFund, start here:
 - **[AquaFundBadge](./contracts/badge.md)** - NFT badge system
 - **[AquaFundRegistry](./contracts/registry.md)** - Project discovery and analytics
 
+## Understanding Roles
+
+AquaFund has three main roles:
+
+1. **Factory Admin** - Manages platform settings and grants permissions
+2. **Project Creator** - NGOs/organizations that can create projects (must be granted `PROJECT_CREATOR_ROLE`)
+3. **Project Admin** - Manages individual projects (releases funds, submits evidence)
+
+When creating a project, the creator specifies a project admin who will manage that specific project.
+
 ## Prerequisites
 
 Before you start, make sure you have:

@@ -205,6 +205,8 @@ async function validateDonation(projectAddress, amountInEth) {
 
 ## Admin Functions
 
+**Important:** These functions can only be called by the **project admin** - the address that was specified when the project was created via `factory.createProject(adminAddress, ...)`.
+
 ### Release Funds
 
 Only the project admin can release funds. A 10% service fee is automatically deducted.
