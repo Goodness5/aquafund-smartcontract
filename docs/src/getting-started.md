@@ -14,12 +14,13 @@ npm install web3
 
 ### 2. Get Contract Addresses
 
-You'll need the deployed contract addresses. Contact your team or check the deployment configuration.
+All contracts are deployed and verified on BSC Testnet (Chain ID: 97):
 
 **Required Contracts:**
-- `AquaFundFactory` - Main factory contract
-- `AquaFundBadge` - Badge NFT contract
-- `AquaFundRegistry` - Registry contract
+- **AquaFundFactory**: [`0x85833f870135671465076793337c4F4Ebee50D34`](https://testnet.bscscan.com/address/0x85833f870135671465076793337c4F4Ebee50D34) - Main factory contract
+- **AquaFundProject (Implementation)**: [`0xc9620e577D0C43B5D09AE8EA406eced818402739`](https://testnet.bscscan.com/address/0xc9620e577D0C43B5D09AE8EA406eced818402739) - Implementation template
+- **AquaFundBadge**: [`0x1aF8c0651d1724EDf62410cb0B3C7cD459Ed9d2D`](https://testnet.bscscan.com/address/0x1aF8c0651d1724EDf62410cb0B3C7cD459Ed9d2D) - Badge NFT contract
+- **AquaFundRegistry**: [`0xf171582a2FaFC0cb8d6436Eae9240920d511998a`](https://testnet.bscscan.com/address/0xf171582a2FaFC0cb8d6436Eae9240920d511998a) - Registry contract
 
 ### 3. Get Contract ABIs
 
@@ -43,7 +44,7 @@ const provider = new ethers.BrowserProvider(window.ethereum);
 const signer = await provider.getSigner();
 
 // Initialize contracts
-const factoryAddress = '0x...'; // Your factory address
+const factoryAddress = '0x85833f870135671465076793337c4F4Ebee50D34'; // BSC Testnet
 const factory = new ethers.Contract(factoryAddress, FactoryABI, signer);
 ```
 
@@ -58,7 +59,7 @@ const web3 = new Web3(window.ethereum);
 const accounts = await web3.eth.getAccounts();
 
 // Initialize contract
-const factoryAddress = '0x...';
+const factoryAddress = '0x85833f870135671465076793337c4F4Ebee50D34'; // BSC Testnet
 const factory = new web3.eth.Contract(FactoryABI, factoryAddress);
 ```
 
