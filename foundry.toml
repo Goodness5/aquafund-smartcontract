@@ -2,11 +2,24 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+optimizer = true
+optimizer_runs = 1
+via_ir = true
+solc_version = "0.8.24"
+# evm_version = "paris"
+
+# Ignore init-code-size errors (contracts may exceed 24KB during deployment)
+# This is acceptable for implementation contracts that will be cloned
+ignored_error_codes = [3860]
 
 [rpc_endpoints]
 sepolia = "${RPC_URL}"
+bsc_testnet = "${BSC_TESTNET_RPC_URL:-https://data-seed-prebsc-1-s1.binance.org:8545}"
+bsc = "${BSC_RPC_URL:-https://bsc-dataseed1.binance.org}"
 
 [etherscan]
 sepolia = { key = "${ETHERSCAN_API_KEY}" }
+bsc_testnet = { key = "${ETHERSCANAPIKEY}", url = "https://api-testnet.bscscan.com/api" }
+bsc = { key = "${ETHERSCANAPIKEY}", url = "https://api.bscscan.com/api" }
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
