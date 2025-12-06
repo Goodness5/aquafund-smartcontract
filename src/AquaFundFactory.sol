@@ -38,6 +38,8 @@ contract AquaFundFactory is
 
     // Project tracking
     mapping(uint256 => address) private _projects; // projectId => projectAddress
+    mapping(uint256 => address) private _projectCreators; // projectId => creator address
+    mapping(address => uint256[]) private _creatorProjects; // creator => projectIds array
     mapping(address => bool) public isAdmin; // admin addresses (verified NGOs)
     
     uint256 private _projectCounter;
@@ -127,8 +129,10 @@ contract AquaFundFactory is
             metadataURI
         );
 
-        // Store project address
+        // Store project address and creator
         _projects[projectId] = projectAddress;
+        _projectCreators[projectId] = msg.sender;
+        _creatorProjects[msg.sender].push(projectId);
 
         // Mark admin as verified if not already
         if (!isAdmin[admin]) {
@@ -169,6 +173,65 @@ contract AquaFundFactory is
      */
     function getTotalProjects() external view returns (uint256) {
         return _projectCounter;
+    }
+
+    /**
+     * @dev Get all project IDs created by a specific creator
+     * @param creator Address of the project creator
+     * @return projectIds Array of project IDs created by the creator
+     */
+    function getProjectsByCreator(
+        address creator
+    ) external view returns (uint256[] memory) {
+        return _creatorProjects[creator];
+    }
+
+    /**
+     * @dev Get project IDs and addresses created by a specific creator
+     * @param creator Address of the project creator
+     * @return projectIds Array of project IDs
+     * @return addresses Array of project addresses
+     */
+    function getProjectsByCreatorWithAddresses(
+        address creator
+    ) external view returns (uint256[] memory projectIds, address[] memory addresses) {
+        uint256[] memory ids = _creatorProjects[creator];
+        uint256 length = ids.length;
+        
+        projectIds = new uint256[](length);
+        addresses = new address[](length);
+        
+        for (uint256 i = 0; i < length; ) {
+            projectIds[i] = ids[i];
+            addresses[i] = _projects[ids[i]];
+            unchecked {
+                ++i;
+            }
+        }
+    }
+
+    /**
+     * @dev Get the creator address of a specific project
+     * @param projectId Project ID
+     * @return Creator address
+     */
+    function getProjectCreator(
+        uint256 projectId
+    ) external view returns (address) {
+        address creator = _projectCreators[projectId];
+        if (creator == address(0)) revert ProjectNotExists();
+        return creator;
+    }
+
+    /**
+     * @dev Get total number of projects created by a specific creator
+     * @param creator Address of the project creator
+     * @return Total number of projects created
+     */
+    function getCreatorProjectCount(
+        address creator
+    ) external view returns (uint256) {
+        return _creatorProjects[creator].length;
     }
 
     /**
