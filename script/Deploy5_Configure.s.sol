@@ -30,15 +30,15 @@ contract Deploy5_Configure is Script {
 
         // Set badge contract in factory
         factoryContract.setBadgeContract(badge);
-        console.log("✓ Badge contract set in factory");
+        console.log("Badge contract set in factory");
 
         // Set registry in factory
         factoryContract.setRegistry(registry);
-        console.log("✓ Registry set in factory");
+        console.log("Registry set in factory");
 
         // Set factory in registry
         registryContract.setFactory(factory);
-        console.log("✓ Factory set in registry");
+        console.log("Factory set in registry");
         
         vm.stopBroadcast();
 

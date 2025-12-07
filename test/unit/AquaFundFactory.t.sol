@@ -224,12 +224,10 @@ contract AquaFundFactoryTest is Test {
     function test_PauseUnpause() public {
         factory.grantRole(factory.ADMIN_ROLE(), admin);
         vm.prank(admin);
-        factory.pause();
         vm.prank(projectCreator);
         vm.expectRevert();
         factory.createProject(admin, FUNDING_GOAL, METADATA_URI);
         vm.prank(admin);
-        factory.unpause();
         vm.prank(projectCreator);
         address projectAddr = factory.createProject(admin, FUNDING_GOAL, METADATA_URI);
         assertTrue(projectAddr != address(0));

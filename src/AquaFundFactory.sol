@@ -4,7 +4,6 @@ pragma solidity ^0.8.20;
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {AccessControl} from "@openzeppelin/contracts/access/AccessControl.sol";
-import {Pausable} from "@openzeppelin/contracts/utils/Pausable.sol";
 import {AquaFundProject} from "./AquaFundProject.sol";
 import {IAquaFundFactory} from "./interfaces/IAquaFundFactory.sol";
 import {IAquaFundBadge} from "./interfaces/IAquaFundBadge.sol";
@@ -18,8 +17,7 @@ import {AquaFundRegistry} from "./AquaFundRegistry.sol";
 contract AquaFundFactory is
     IAquaFundFactory,
     Ownable,
-    AccessControl,
-    Pausable
+    AccessControl
 {
     using Clones for address;
 
@@ -108,7 +106,6 @@ contract AquaFundFactory is
         bytes32 metadataURI
     )
         external
-        whenNotPaused
         onlyRole(PROJECT_CREATOR_ROLE)
         returns (address projectAddress)
     {
@@ -319,20 +316,6 @@ contract AquaFundFactory is
         address account
     ) external onlyRole(ADMIN_ROLE) {
         _revokeRole(PROJECT_CREATOR_ROLE, account);
-    }
-
-    /**
-     * @dev Pause project creation
-     */
-    function pause() external onlyRole(ADMIN_ROLE) {
-        _pause();
-    }
-
-    /**
-     * @dev Unpause project creation
-     */
-    function unpause() external onlyRole(ADMIN_ROLE) {
-        _unpause();
     }
 
     /**
