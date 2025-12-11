@@ -112,7 +112,7 @@ contract AquaFundIntegrationTest is Test {
         assertEq(factory.getTotalDonors(), 3);
 
         // Step 3: Submit evidence
-        bytes32 evidenceHash = keccak256("project-completion-photos");
+        string memory evidenceHash = "project-completion-photos";
         vm.prank(ngoAdmin);
         project.submitEvidence(evidenceHash);
 

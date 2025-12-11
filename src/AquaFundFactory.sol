@@ -98,22 +98,22 @@ contract AquaFundFactory is
      * @param admin Project administrator address
      * @param creator Address that created the project
      * @param fundingGoal Funding goal in wei
-     * @param title Project title (IPFS hash or encoded)
-     * @param description Project description (IPFS hash)
-     * @param images Array of project images (IPFS hashes)
-     * @param location Project location (IPFS hash or encoded)
-     * @param category Project category (IPFS hash or encoded)
+     * @param title Project title
+     * @param description Project description
+     * @param images Array of project images
+     * @param location Project location
+     * @param category Project category
      * @return projectAddress Address of the created project
      */
     function createProject(
         address admin,
         address creator,
         uint256 fundingGoal,
-        bytes32 title,
-        bytes32 description,
+        string memory title,
+        string memory description,
         bytes32[] memory images,
-        bytes32 location,
-        bytes32 category
+        string memory location,
+        string memory category
     )
         external
         onlyRole(PROJECT_CREATOR_ROLE)

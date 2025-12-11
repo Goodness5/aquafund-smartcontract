@@ -27,11 +27,11 @@ interface IAquaFundFactory {
         address admin,
         address creator,
         uint256 fundingGoal,
-        bytes32 title,
-        bytes32 description,
+        string memory title,
+        string memory description,
         bytes32[] memory images,
-        bytes32 location,
-        bytes32 category
+        string memory location,
+        string memory category
     ) external returns (address projectAddress);
 
     event GlobalDonationReceived(

@@ -18,7 +18,7 @@ All contracts are deployed and verified on BSC Testnet (Chain ID: 97):
 
 **Required Contracts:**
 - **AquaFundFactory**: [`0x9486F28D72a08d522cF25dFF3AA7a1B4864Fe47D`](https://testnet.bscscan.com/address/0x9486F28D72a08d522cF25dFF3AA7a1B4864Fe47D) - Main factory contract
-- **AquaFundProject (Implementation)**: [`0x8ED03B830ACaC2FC67497a3AfAa9653eFbB54b01`](https://testnet.bscscan.com/address/0x8ED03B830ACaC2FC67497a3AfAa9653eFbB54b01) - Implementation template
+- **AquaFundProject (Implementation)**: [`0xA045e24cd1f84F5C36Cfc8Edb5A370ce72d3856d`](https://testnet.bscscan.com/address/0xA045e24cd1f84F5C36Cfc8Edb5A370ce72d3856d) - Implementation template
 - **AquaFundBadge**: [`0xee508704a55e1b623aB643E6A694Dbfe8355C157`](https://testnet.bscscan.com/address/0xee508704a55e1b623aB643E6A694Dbfe8355C157) - Badge NFT contract
 - **AquaFundRegistry**: [`0x86e63f4c3C132AA0fEA1B2980b7E8191f4Ee4825`](https://testnet.bscscan.com/address/0x86e63f4c3C132AA0fEA1B2980b7E8191f4Ee4825) - Registry contract
 

@@ -77,22 +77,22 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
      * @param _admin Project administrator address
      * @param _creator Address that created the project
      * @param _fundingGoal Funding goal in wei
-     * @param _title Project title (IPFS hash or encoded)
-     * @param _description Project description (IPFS hash)
-     * @param _images Array of project images (IPFS hashes)
-     * @param _location Project location (IPFS hash or encoded)
-     * @param _category Project category (IPFS hash or encoded)
+     * @param _title Project title
+     * @param _description Project description
+     * @param _images Array of project images
+     * @param _location Project location
+     * @param _category Project category
      */
     function initialize(
         uint256 _projectId,
         address _admin,
         address _creator,
         uint256 _fundingGoal,
-        bytes32 _title,
-        bytes32 _description,
+        string memory _title,
+        string memory _description,
         bytes32[] memory _images,
-        bytes32 _location,
-        bytes32 _category
+        string memory _location,
+        string memory _category
     ) external {
         if (_initialized) revert AlreadyInitialized();
         if (address(factory) != address(0) && msg.sender != address(factory)) {
@@ -291,10 +291,10 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
 
     /**
      * @dev Submit evidence for project completion
-     * @param _evidenceHash IPFS hash of evidence (bytes32)
+     * @param _evidenceHash Evidence hash or URI
      */
     function submitEvidence(
-        bytes32 _evidenceHash
+        string memory _evidenceHash
     ) external onlyAdmin onlyWhenInitialized {
         _evidence.push(
             Evidence({

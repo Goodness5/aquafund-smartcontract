@@ -10,7 +10,7 @@ AquaFund is a decentralized crowdfunding platform built on BNB Smart Chain (BSC)
 
 All contracts are deployed and verified on BSC Testnet (Chain ID: 97):
 
-- **AquaFundProject (Implementation)**: [`0x8ED03B830ACaC2FC67497a3AfAa9653eFbB54b01`](https://testnet.bscscan.com/address/0x8ED03B830ACaC2FC67497a3AfAa9653eFbB54b01)
+- **AquaFundProject (Implementation)**: [`0xA045e24cd1f84F5C36Cfc8Edb5A370ce72d3856d`](https://testnet.bscscan.com/address/0xA045e24cd1f84F5C36Cfc8Edb5A370ce72d3856d)
   - Implementation contract used as a template for creating project clones
 
 - **AquaFundFactory**: [`0x9486F28D72a08d522cF25dFF3AA7a1B4864Fe47D`](https://testnet.bscscan.com/address/0x9486F28D72a08d522cF25dFF3AA7a1B4864Fe47D)

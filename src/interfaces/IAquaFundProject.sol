@@ -21,11 +21,11 @@ interface IAquaFundProject {
         uint256 fundingGoal;      // slot 2 (32 bytes)
         uint256 fundsRaised;      // slot 3 (32 bytes)
         ProjectStatus status;     // slot 4 (1 byte)
-        bytes32 title;            // slot 5 (32 bytes) - Project title (IPFS hash or encoded)
-        bytes32 description;      // slot 6 (32 bytes) - Project description (IPFS hash)
-        bytes32[] images;         // Array of project images (IPFS hashes) - stored separately
-        bytes32 location;          // slot 7 (32 bytes) - Project location (IPFS hash or encoded)
-        bytes32 category;         // slot 8 (32 bytes) - Project category (IPFS hash or encoded)
+        string title;             // Project title
+        string description;       // Project description
+        bytes32[] images;         // Array of project images
+        string location;          // Project location
+        string category;          // Project category
         uint64 createdAt;         // slot 9 (8 bytes) - creation timestamp
         uint64 updatedAt;          // slot 9 (8 bytes) - last update timestamp (fits with createdAt)
         // Note: projectId could be uint256 if > 2^128 projects needed
@@ -41,7 +41,7 @@ interface IAquaFundProject {
     }
 
     struct Evidence {
-        bytes32 evidenceHash;     // slot 0 (IPFS hash as bytes32)
+        string evidenceHash;      // Evidence hash or URI
         uint64 timestamp;         // slot 1 (8 bytes)
         address submitter;        // slot 1 (20 bytes, fits with uint64)
         // Packed into 2 slots instead of 3+
@@ -52,11 +52,11 @@ interface IAquaFundProject {
         address indexed admin,
         address indexed creator,
         uint256 fundingGoal,
-        bytes32 title,
-        bytes32 description,
+        string title,
+        string description,
         bytes32[] images,
-        bytes32 location,
-        bytes32 category
+        string location,
+        string category
     );
 
     event DonationReceived(
@@ -76,7 +76,7 @@ interface IAquaFundProject {
 
     event EvidenceSubmitted(
         uint256 indexed projectId,
-        bytes32 indexed evidenceHash,
+        string evidenceHash,
         address indexed submitter,
         uint256 timestamp
     );
@@ -98,11 +98,11 @@ interface IAquaFundProject {
         address _admin,
         address _creator,
         uint256 _fundingGoal,
-        bytes32 _title,
-        bytes32 _description,
+        string memory _title,
+        string memory _description,
         bytes32[] memory _images,
-        bytes32 _location,
-        bytes32 _category
+        string memory _location,
+        string memory _category
     ) external;
 
     function donate() external payable;
@@ -111,7 +111,7 @@ interface IAquaFundProject {
 
     function releaseFunds() external;
 
-    function submitEvidence(bytes32 _evidenceHash) external;
+    function submitEvidence(string memory _evidenceHash) external;
 
     function updateStatus(ProjectStatus _newStatus) external;
 
