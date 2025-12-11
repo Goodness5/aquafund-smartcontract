@@ -96,20 +96,31 @@ contract AquaFundFactory is
     /**
      * @dev Create a new project using minimal proxy
      * @param admin Project administrator address
+     * @param creator Address that created the project
      * @param fundingGoal Funding goal in wei
-     * @param metadataURI IPFS hash for project metadata
+     * @param title Project title (IPFS hash or encoded)
+     * @param description Project description (IPFS hash)
+     * @param images Array of project images (IPFS hashes)
+     * @param location Project location (IPFS hash or encoded)
+     * @param category Project category (IPFS hash or encoded)
      * @return projectAddress Address of the created project
      */
     function createProject(
         address admin,
+        address creator,
         uint256 fundingGoal,
-        bytes32 metadataURI
+        bytes32 title,
+        bytes32 description,
+        bytes32[] memory images,
+        bytes32 location,
+        bytes32 category
     )
         external
         onlyRole(PROJECT_CREATOR_ROLE)
         returns (address projectAddress)
     {
         if (admin == address(0)) revert InvalidAddress();
+        if (creator == address(0)) revert InvalidAddress();
         if (fundingGoal == 0) revert InvalidAddress();
 
         // Create minimal proxy (clone)
@@ -118,18 +129,27 @@ contract AquaFundFactory is
         // Increment project counter
         uint256 projectId = ++_projectCounter;
 
-        // Initialize the clone
+        // Initialize the clone with all project data
+        // This sets all ProjectInfo fields: projectId, admin, creator, 
+        // fundingGoal, fundsRaised (0), status (Active),
+        // title, description, images (array), location, category,
+        // createdAt, and updatedAt timestamps
         AquaFundProject(payable(projectAddress)).initialize(
-            projectId,
-            admin,
-            fundingGoal,
-            metadataURI
+            projectId,      // Auto-incremented project ID
+            admin,          // Project administrator
+            creator,        // Creator address (passed as parameter)
+            fundingGoal,    // Funding target
+            title,          // Project title
+            description,    // Project description
+            images,         // Array of project images
+            location,       // Project location
+            category        // Project category
         );
 
         // Store project address and creator
         _projects[projectId] = projectAddress;
-        _projectCreators[projectId] = msg.sender;
-        _creatorProjects[msg.sender].push(projectId);
+        _projectCreators[projectId] = creator;
+        _creatorProjects[creator].push(projectId);
 
         // Mark admin as verified if not already
         if (!isAdmin[admin]) {

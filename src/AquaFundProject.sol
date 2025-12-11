@@ -75,20 +75,31 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
      * @dev Initialize the project (called by factory)
      * @param _projectId Unique project identifier
      * @param _admin Project administrator address
+     * @param _creator Address that created the project
      * @param _fundingGoal Funding goal in wei
-     * @param _metadataUri IPFS hash for project metadata
+     * @param _title Project title (IPFS hash or encoded)
+     * @param _description Project description (IPFS hash)
+     * @param _images Array of project images (IPFS hashes)
+     * @param _location Project location (IPFS hash or encoded)
+     * @param _category Project category (IPFS hash or encoded)
      */
     function initialize(
         uint256 _projectId,
         address _admin,
+        address _creator,
         uint256 _fundingGoal,
-        bytes32 _metadataUri
+        bytes32 _title,
+        bytes32 _description,
+        bytes32[] memory _images,
+        bytes32 _location,
+        bytes32 _category
     ) external {
         if (_initialized) revert AlreadyInitialized();
         if (address(factory) != address(0) && msg.sender != address(factory)) {
             revert UnauthorizedAccess();
         }
         if (_admin == address(0)) revert InvalidAddress();
+        if (_creator == address(0)) revert InvalidAddress();
         if (_fundingGoal == 0) revert InvalidAmount();
         
         // Set factory on first initialization (for clones)
@@ -96,20 +107,33 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
             factory = IAquaFundFactory(msg.sender);
         }
 
-        // Pack projectId into uint128 (supports up to 2^128 projects)
+        uint64 timestamp = uint64(block.timestamp);
+
+        // Initialize all ProjectInfo fields during project creation
+        // All data is set here: projectId, admin, creator, fundingGoal, 
+        // fundsRaised (starts at 0), status (starts as Active), 
+        // title, description, images (array), location, category,
+        // createdAt, and updatedAt timestamps
         _projectInfo = ProjectInfo({
-            projectId: uint128(_projectId),
-            admin: _admin,
-            fundingGoal: _fundingGoal,
-            fundsRaised: 0,
-            status: ProjectStatus.Active,
-            metadataUri: _metadataUri
+            projectId: uint128(_projectId),      // From factory (auto-incremented)
+            admin: _admin,                       // Project administrator
+            creator: _creator,                   // Address that created the project
+            fundingGoal: _fundingGoal,          // Funding target in wei
+            fundsRaised: 0,                      // Starts at zero
+            status: ProjectStatus.Active,        // Initial status
+            title: _title,                       // Project title
+            description: _description,           // Project description
+            images: _images,                     // Array of project images
+            location: _location,                 // Project location
+            category: _category,                 // Project category
+            createdAt: timestamp,                // Creation timestamp
+            updatedAt: timestamp                 // Last update timestamp
         });
 
         _initialized = true;
         _transferOwnership(_admin);
 
-        emit ProjectInitialized(_projectId, _admin, _fundingGoal, _metadataUri);
+        emit ProjectInitialized(_projectId, _admin, _creator, _fundingGoal, _title, _description, _images, _location, _category);
     }
 
     /**
@@ -211,6 +235,7 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
             _projectInfo.fundsRaised >= _projectInfo.fundingGoal
         ) {
             _projectInfo.status = ProjectStatus.Funded;
+            _projectInfo.updatedAt = uint64(block.timestamp);
             emit ProjectStatusChanged(
                 _projectInfo.projectId,
                 ProjectStatus.Active,
@@ -243,6 +268,7 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
         uint256 netAmount = totalAmount - serviceFee;
 
         _projectInfo.status = ProjectStatus.Completed;
+        _projectInfo.updatedAt = uint64(block.timestamp);
 
         // Transfer service fee to treasury
         address treasury = factory.getTreasury();
@@ -314,6 +340,7 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
         } else {
             _projectInfo.status = _newStatus;
         }
+        _projectInfo.updatedAt = uint64(block.timestamp);
 
         emit ProjectStatusChanged(
             _projectInfo.projectId,

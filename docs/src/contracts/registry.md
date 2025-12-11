@@ -2,7 +2,7 @@
 
 The `AquaFundRegistry` provides centralized project discovery, filtering, and platform analytics. It's designed for efficient querying and pagination.
 
-**Deployed Address (BSC Testnet)**: [`0xf171582a2FaFC0cb8d6436Eae9240920d511998a`](https://testnet.bscscan.com/address/0xf171582a2FaFC0cb8d6436Eae9240920d511998a)
+**Deployed Address (BSC Testnet)**: [`0x86e63f4c3C132AA0fEA1B2980b7E8191f4Ee4825`](https://testnet.bscscan.com/address/0x86e63f4c3C132AA0fEA1B2980b7E8191f4Ee4825)
 
 ## Overview
 

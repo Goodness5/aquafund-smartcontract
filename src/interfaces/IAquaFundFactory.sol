@@ -25,8 +25,13 @@ interface IAquaFundFactory {
 
     function createProject(
         address admin,
+        address creator,
         uint256 fundingGoal,
-        bytes32 metadataUri
+        bytes32 title,
+        bytes32 description,
+        bytes32[] memory images,
+        bytes32 location,
+        bytes32 category
     ) external returns (address projectAddress);
 
     event GlobalDonationReceived(

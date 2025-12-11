@@ -17,12 +17,19 @@ interface IAquaFundProject {
     struct ProjectInfo {
         uint128 projectId;        // slot 0 (16 bytes)
         address admin;            // slot 0 (20 bytes) - fits with uint128 (36 bytes total, uses 2 slots)
-        uint256 fundingGoal;      // slot 1 (32 bytes)
-        uint256 fundsRaised;      // slot 2 (32 bytes)
-        ProjectStatus status;     // slot 3 (1 byte)
-        bytes32 metadataUri;      // slot 4 (32 bytes) - IPFS hash as bytes32
+        address creator;          // slot 1 (20 bytes) - address that created the project
+        uint256 fundingGoal;      // slot 2 (32 bytes)
+        uint256 fundsRaised;      // slot 3 (32 bytes)
+        ProjectStatus status;     // slot 4 (1 byte)
+        bytes32 title;            // slot 5 (32 bytes) - Project title (IPFS hash or encoded)
+        bytes32 description;      // slot 6 (32 bytes) - Project description (IPFS hash)
+        bytes32[] images;         // Array of project images (IPFS hashes) - stored separately
+        bytes32 location;          // slot 7 (32 bytes) - Project location (IPFS hash or encoded)
+        bytes32 category;         // slot 8 (32 bytes) - Project category (IPFS hash or encoded)
+        uint64 createdAt;         // slot 9 (8 bytes) - creation timestamp
+        uint64 updatedAt;          // slot 9 (8 bytes) - last update timestamp (fits with createdAt)
         // Note: projectId could be uint256 if > 2^128 projects needed
-        // Current packing: 5 slots total (can't pack status with bytes32 as they're different types in storage)
+        // Arrays are stored separately in storage, not packed in struct
     }
 
     struct Donation {
@@ -43,8 +50,13 @@ interface IAquaFundProject {
     event ProjectInitialized(
         uint256 indexed projectId,
         address indexed admin,
+        address indexed creator,
         uint256 fundingGoal,
-        bytes32 metadataUri
+        bytes32 title,
+        bytes32 description,
+        bytes32[] images,
+        bytes32 location,
+        bytes32 category
     );
 
     event DonationReceived(
@@ -84,8 +96,13 @@ interface IAquaFundProject {
     function initialize(
         uint256 _projectId,
         address _admin,
+        address _creator,
         uint256 _fundingGoal,
-        bytes32 _metadataUri
+        bytes32 _title,
+        bytes32 _description,
+        bytes32[] memory _images,
+        bytes32 _location,
+        bytes32 _category
     ) external;
 
     function donate() external payable;
