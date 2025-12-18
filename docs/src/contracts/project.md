@@ -2,7 +2,7 @@
 
 The `AquaFundProject` contract represents an individual funding project. Each project is created as a minimal proxy (clone) for gas efficiency.
 
-**Implementation Address (BSC Testnet)**: [`0xA045e24cd1f84F5C36Cfc8Edb5A370ce72d3856d`](https://testnet.bscscan.com/address/0xA045e24cd1f84F5C36Cfc8Edb5A370ce72d3856d)
+**Implementation Address (BSC Testnet)**: [`0xFed99A6362fc4bDb4776Ec61Bb7612d5bf278CbF`](https://testnet.bscscan.com/address/0xFed99A6362fc4bDb4776Ec61Bb7612d5bf278CbF)
 
 > **Note**: This is the implementation contract. Individual projects are created as clones (minimal proxies) by the Factory. Each project will have its own unique address.
 

@@ -29,7 +29,7 @@ interface IAquaFundFactory {
         uint256 fundingGoal,
         string memory title,
         string memory description,
-        bytes32[] memory images,
+        string[] memory images,
         string memory location,
         string memory category
     ) external returns (address projectAddress);

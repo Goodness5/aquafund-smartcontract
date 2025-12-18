@@ -90,7 +90,7 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
         uint256 _fundingGoal,
         string memory _title,
         string memory _description,
-        bytes32[] memory _images,
+        string[] memory _images,
         string memory _location,
         string memory _category
     ) external {

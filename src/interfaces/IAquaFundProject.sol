@@ -15,7 +15,7 @@ interface IAquaFundProject {
     }
 
     struct ProjectInfo {
-        uint128 projectId;        // slot 0 (16 bytes)
+        uint256 projectId;        // slot 0 (16 bytes)
         address admin;            // slot 0 (20 bytes) - fits with uint128 (36 bytes total, uses 2 slots)
         address creator;          // slot 1 (20 bytes) - address that created the project
         uint256 fundingGoal;      // slot 2 (32 bytes)
@@ -23,7 +23,7 @@ interface IAquaFundProject {
         ProjectStatus status;     // slot 4 (1 byte)
         string title;             // Project title
         string description;       // Project description
-        bytes32[] images;         // Array of project images
+        string[] images;          // Array of project images (URLs or IPFS hashes)
         string location;          // Project location
         string category;          // Project category
         uint64 createdAt;         // slot 9 (8 bytes) - creation timestamp
@@ -54,7 +54,7 @@ interface IAquaFundProject {
         uint256 fundingGoal,
         string title,
         string description,
-        bytes32[] images,
+        string[] images,
         string location,
         string category
     );
@@ -100,7 +100,7 @@ interface IAquaFundProject {
         uint256 _fundingGoal,
         string memory _title,
         string memory _description,
-        bytes32[] memory _images,
+        string[] memory _images,
         string memory _location,
         string memory _category
     ) external;

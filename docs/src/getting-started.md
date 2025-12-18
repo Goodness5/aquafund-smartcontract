@@ -17,8 +17,8 @@ npm install web3
 All contracts are deployed and verified on BSC Testnet (Chain ID: 97):
 
 **Required Contracts:**
-- **AquaFundFactory**: [`0x9486F28D72a08d522cF25dFF3AA7a1B4864Fe47D`](https://testnet.bscscan.com/address/0x9486F28D72a08d522cF25dFF3AA7a1B4864Fe47D) - Main factory contract
-- **AquaFundProject (Implementation)**: [`0xA045e24cd1f84F5C36Cfc8Edb5A370ce72d3856d`](https://testnet.bscscan.com/address/0xA045e24cd1f84F5C36Cfc8Edb5A370ce72d3856d) - Implementation template
+- **AquaFundFactory**: [`0x4c2aFA6e54024AB86168662AeAF5b295a2FF6E4C`](https://testnet.bscscan.com/address/0x4c2aFA6e54024AB86168662AeAF5b295a2FF6E4C) - Main factory contract
+- **AquaFundProject (Implementation)**: [`0xFed99A6362fc4bDb4776Ec61Bb7612d5bf278CbF`](https://testnet.bscscan.com/address/0xFed99A6362fc4bDb4776Ec61Bb7612d5bf278CbF) - Implementation template
 - **AquaFundBadge**: [`0xee508704a55e1b623aB643E6A694Dbfe8355C157`](https://testnet.bscscan.com/address/0xee508704a55e1b623aB643E6A694Dbfe8355C157) - Badge NFT contract
 - **AquaFundRegistry**: [`0x86e63f4c3C132AA0fEA1B2980b7E8191f4Ee4825`](https://testnet.bscscan.com/address/0x86e63f4c3C132AA0fEA1B2980b7E8191f4Ee4825) - Registry contract
 
@@ -44,7 +44,7 @@ const provider = new ethers.BrowserProvider(window.ethereum);
 const signer = await provider.getSigner();
 
 // Initialize contracts
-const factoryAddress = '0x9486F28D72a08d522cF25dFF3AA7a1B4864Fe47D'; // BSC Testnet
+const factoryAddress = '0x4c2aFA6e54024AB86168662AeAF5b295a2FF6E4C'; // BSC Testnet
 const factory = new ethers.Contract(factoryAddress, FactoryABI, signer);
 ```
 
@@ -59,7 +59,7 @@ const web3 = new Web3(window.ethereum);
 const accounts = await web3.eth.getAccounts();
 
 // Initialize contract
-const factoryAddress = '0x9486F28D72a08d522cF25dFF3AA7a1B4864Fe47D'; // BSC Testnet
+const factoryAddress = '0x4c2aFA6e54024AB86168662AeAF5b295a2FF6E4C'; // BSC Testnet
 const factory = new web3.eth.Contract(FactoryABI, factoryAddress);
 ```
 
