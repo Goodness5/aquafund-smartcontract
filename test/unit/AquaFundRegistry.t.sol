@@ -45,9 +45,14 @@ contract AquaFundRegistryTest is Test {
     function test_RegisterProject() public {
         vm.prank(admin);
         factory.createProject(
-            projectAdmin,
-            10 ether,
-            keccak256("metadata")
+            projectAdmin,           // admin
+            admin,                 // creator
+            10 ether,              // fundingGoal
+            "Test Project",        // title
+            "Test Description",    // description
+            new string[](0),       // images
+            "Test Location",       // location
+            "Test Category"        // category
         );
 
         AquaFundRegistry.PlatformStats memory stats = registry.getPlatformStats();
@@ -56,9 +61,13 @@ contract AquaFundRegistryTest is Test {
 
     function test_GetPlatformStats() public {
         vm.prank(admin);
-        address project1Addr = factory.createProject(projectAdmin, 10 ether, keccak256("p1"));
+        address project1Addr = factory.createProject(
+            projectAdmin, admin, 10 ether, "Project 1", "Description 1", new string[](0), "Location 1", "Category 1"
+        );
         vm.prank(admin);
-        address project2Addr = factory.createProject(projectAdmin, 20 ether, keccak256("p2"));
+        address project2Addr = factory.createProject(
+            projectAdmin, admin, 20 ether, "Project 2", "Description 2", new string[](0), "Location 2", "Category 2"
+        );
         AquaFundProject project1 = AquaFundProject(payable(project1Addr));
         AquaFundProject project2 = AquaFundProject(payable(project2Addr));
         vm.deal(donor, 100 ether);
@@ -83,10 +92,14 @@ contract AquaFundRegistryTest is Test {
 
     function test_GetProjectsByStatus() public {
         vm.prank(admin);
-        factory.createProject(projectAdmin, 10 ether, keccak256("p1"));
+        factory.createProject(
+            projectAdmin, admin, 10 ether, "Project 1", "Description 1", new string[](0), "Location 1", "Category 1"
+        );
 
         vm.prank(admin);
-        factory.createProject(projectAdmin, 20 ether, keccak256("p2"));
+        factory.createProject(
+            projectAdmin, admin, 20 ether, "Project 2", "Description 2", new string[](0), "Location 2", "Category 2"
+        );
 
         address project1Addr = factory.getProjectAddress(1);
         AquaFundProject project1 = AquaFundProject(payable(project1Addr));
@@ -109,9 +122,14 @@ contract AquaFundRegistryTest is Test {
     function test_GetProjectDetails() public {
         vm.prank(admin);
         factory.createProject(
-            projectAdmin,
-            10 ether,
-            keccak256("metadata")
+            projectAdmin,           // admin
+            admin,                 // creator
+            10 ether,              // fundingGoal
+            "Test Project",        // title
+            "Test Description",    // description
+            new string[](0),       // images
+            "Test Location",       // location
+            "Test Category"        // category
         );
 
         IAquaFundProject.ProjectInfo memory info = registry.getProjectDetails(1);
@@ -125,7 +143,11 @@ contract AquaFundRegistryTest is Test {
         // Create 5 projects
         for (uint256 i = 0; i < 5; i++) {
             vm.prank(admin);
-            factory.createProject(projectAdmin, 10 ether, keccak256(abi.encodePacked("p", i)));
+            factory.createProject(
+                projectAdmin, admin, 10 ether, 
+                string(abi.encodePacked("Project ", vm.toString(i))),
+                "Description", new string[](0), "Location", "Category"
+            );
         }
 
         (uint256[] memory projectIds, address[] memory addresses) = registry.getProjectsPaginated(0, 3);

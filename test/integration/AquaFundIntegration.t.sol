@@ -78,9 +78,14 @@ contract AquaFundIntegrationTest is Test {
         // Step 1: Create project
         vm.prank(ngoAdmin);
         address projectAddr = factory.createProject(
-            ngoAdmin,
-            PROJECT_GOAL,
-            METADATA_URI
+            ngoAdmin,              // admin
+            ngoAdmin,               // creator
+            PROJECT_GOAL,           // fundingGoal
+            "Water Project Kenya",  // title
+            "Clean water project",  // description
+            new string[](0),        // images
+            "Kenya",                // location
+            "Water"                 // category
         );
         AquaFundProject project = AquaFundProject(payable(projectAddr));
         uint256 projectId = 1;
@@ -146,7 +151,9 @@ contract AquaFundIntegrationTest is Test {
     function test_CompleteWorkflow_MixedDonations() public {
         // Create project
         vm.prank(ngoAdmin);
-        address projectAddr = factory.createProject(ngoAdmin, PROJECT_GOAL, METADATA_URI);
+        address projectAddr = factory.createProject(
+            ngoAdmin, ngoAdmin, PROJECT_GOAL, "Test Project", "Description", new string[](0), "Location", "Category"
+        );
         AquaFundProject project = AquaFundProject(payable(projectAddr));
         // Donate with ETH
         vm.prank(donor1);
@@ -166,12 +173,16 @@ contract AquaFundIntegrationTest is Test {
     function test_MultipleProjects() public {
         // Create first project
         vm.prank(ngoAdmin);
-        address project1Addr = factory.createProject(ngoAdmin, 50 ether, keccak256("project1"));
+        address project1Addr = factory.createProject(
+            ngoAdmin, ngoAdmin, 50 ether, "Project 1", "Description 1", new string[](0), "Location 1", "Category 1"
+        );
         AquaFundProject project1 = AquaFundProject(payable(project1Addr));
 
         // Create second project
         vm.prank(ngoAdmin);
-        address project2Addr = factory.createProject(ngoAdmin, 75 ether, keccak256("project2"));
+        address project2Addr = factory.createProject(
+            ngoAdmin, ngoAdmin, 75 ether, "Project 2", "Description 2", new string[](0), "Location 2", "Category 2"
+        );
         AquaFundProject project2 = AquaFundProject(payable(project2Addr));
 
         assertEq(factory.getTotalProjects(), 2);
@@ -191,10 +202,14 @@ contract AquaFundIntegrationTest is Test {
     function test_LeaderboardAcrossProjects() public {
         // Create two projects
         vm.prank(ngoAdmin);
-        address project1Addr = factory.createProject(ngoAdmin, 100 ether, keccak256("p1"));
+        address project1Addr = factory.createProject(
+            ngoAdmin, ngoAdmin, 100 ether, "Project 1", "Description 1", new string[](0), "Location 1", "Category 1"
+        );
         
         vm.prank(ngoAdmin);
-        address project2Addr = factory.createProject(ngoAdmin, 100 ether, keccak256("p2"));
+        address project2Addr = factory.createProject(
+            ngoAdmin, ngoAdmin, 100 ether, "Project 2", "Description 2", new string[](0), "Location 2", "Category 2"
+        );
 
         AquaFundProject project1 = AquaFundProject(payable(project1Addr));
         AquaFundProject project2 = AquaFundProject(payable(project2Addr));
@@ -231,7 +246,9 @@ contract AquaFundIntegrationTest is Test {
     function test_CancelAndRefund() public {
         // Create project
         vm.prank(ngoAdmin);
-        address projectAddr = factory.createProject(ngoAdmin, PROJECT_GOAL, METADATA_URI);
+        address projectAddr = factory.createProject(
+            ngoAdmin, ngoAdmin, PROJECT_GOAL, "Test Project", "Description", new string[](0), "Location", "Category"
+        );
         AquaFundProject project = AquaFundProject(payable(projectAddr));
 
         // Donations
@@ -259,10 +276,14 @@ contract AquaFundIntegrationTest is Test {
     function test_RegistryIntegration() public {
         // Create projects
         vm.prank(ngoAdmin);
-        factory.createProject(ngoAdmin, 50 ether, keccak256("p1"));
+        factory.createProject(
+            ngoAdmin, ngoAdmin, 50 ether, "Project 1", "Description 1", new string[](0), "Location 1", "Category 1"
+        );
 
         vm.prank(ngoAdmin);
-        factory.createProject(ngoAdmin, 75 ether, keccak256("p2"));
+        factory.createProject(
+            ngoAdmin, ngoAdmin, 75 ether, "Project 2", "Description 2", new string[](0), "Location 2", "Category 2"
+        );
 
         // Check registry stats  
         AquaFundRegistry.PlatformStats memory stats = registry.getPlatformStats();
@@ -275,7 +296,9 @@ contract AquaFundIntegrationTest is Test {
         MockERC20 maliciousToken = new MockERC20();
         maliciousToken.mint(donor1, 1e18);
         vm.prank(ngoAdmin);
-        address projectAddr = factory.createProject(ngoAdmin, PROJECT_GOAL, METADATA_URI);
+        address projectAddr = factory.createProject(
+            ngoAdmin, ngoAdmin, PROJECT_GOAL, "Test Project", "Description", new string[](0), "Location", "Category"
+        );
         AquaFundProject project = AquaFundProject(payable(projectAddr));
         vm.prank(donor1);
         maliciousToken.approve(address(project), 1e18);

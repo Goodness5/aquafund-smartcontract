@@ -94,9 +94,14 @@ contract AquaFundProjectTest is Test {
 
         vm.prank(admin);
         address projectAddr = factory.createProject(
-            admin,
-            FUNDING_GOAL,
-            METADATA_URI
+            admin,           // admin
+            admin,           // creator
+            FUNDING_GOAL,    // fundingGoal
+            "Test Project", // title
+            "Test Description", // description
+            new string[](0), // images
+            "Test Location", // location
+            "Test Category"  // category
         );
 
         AquaFundProject project = AquaFundProject(payable(projectAddr));
@@ -106,7 +111,6 @@ contract AquaFundProjectTest is Test {
         assertEq(info.fundingGoal, FUNDING_GOAL);
         assertEq(info.fundsRaised, 0);
         assertEq(uint256(info.status), uint256(IAquaFundProject.ProjectStatus.Active));
-        assertEq(info.metadataUri, METADATA_URI);
     }
 
     function test_DonateETH() public {
@@ -247,7 +251,7 @@ contract AquaFundProjectTest is Test {
     function test_SubmitEvidence() public {
         address projectAddr = _createProject();
         AquaFundProject project = AquaFundProject(payable(projectAddr));
-        bytes32 evidenceHash = keccak256("evidence-hash");
+        string memory evidenceHash = "evidence-hash-ipfs-uri";
 
         vm.prank(admin);
         project.submitEvidence(evidenceHash);
@@ -264,7 +268,7 @@ contract AquaFundProjectTest is Test {
 
         vm.prank(attacker);
         vm.expectRevert();
-        project.submitEvidence(keccak256("evidence"));
+        project.submitEvidence("evidence");
     }
 
     function test_RefundDonor() public {
@@ -325,13 +329,199 @@ contract AquaFundProjectTest is Test {
         assertEq(project.getDonation(address(this)), DONATION_AMOUNT);
     }
 
+    // Token Escrow Tests
+    function test_TokenEscrow_HeldInContract() public {
+        address projectAddr = _createProject();
+        AquaFundProject project = AquaFundProject(payable(projectAddr));
+        uint256 amount = 1000 * 10**18;
+
+        vm.startPrank(donor);
+        mockToken.approve(address(project), amount);
+        project.donateToken(address(mockToken), amount);
+        vm.stopPrank();
+
+        // Verify token is held in escrow (project contract)
+        assertEq(mockToken.balanceOf(address(project)), amount);
+        assertEq(project.getTokenBalance(address(mockToken)), amount);
+        
+        // Verify token appears in donated tokens list
+        address[] memory tokens = project.getDonatedTokens();
+        assertEq(tokens.length, 1);
+        assertEq(tokens[0], address(mockToken));
+    }
+
+    function test_ReleaseFunds_WithTokens() public {
+        address projectAddr = _createProject();
+        AquaFundProject project = AquaFundProject(payable(projectAddr));
+        uint256 tokenAmount = 5000 * 10**18;
+        uint256 ethAmount = 5 ether;
+
+        // Donate both ETH and tokens
+        vm.startPrank(donor);
+        project.donate{value: ethAmount}();
+        mockToken.approve(address(project), tokenAmount);
+        project.donateToken(address(mockToken), tokenAmount);
+        vm.stopPrank();
+
+        uint256 adminEthBefore = admin.balance;
+        uint256 adminTokenBefore = mockToken.balanceOf(admin);
+        uint256 treasuryEthBefore = treasury.balance;
+        uint256 treasuryTokenBefore = mockToken.balanceOf(treasury);
+
+        // Release funds
+        vm.prank(admin);
+        project.releaseFunds();
+
+        // Verify ETH release (10% fee)
+        assertEq(admin.balance - adminEthBefore, ethAmount * 9 / 10);
+        assertEq(treasury.balance - treasuryEthBefore, ethAmount / 10);
+
+        // Verify token release (10% fee)
+        assertEq(mockToken.balanceOf(admin) - adminTokenBefore, tokenAmount * 9 / 10);
+        assertEq(mockToken.balanceOf(treasury) - treasuryTokenBefore, tokenAmount / 10);
+
+        // Verify escrow is cleared
+        assertEq(project.getTokenBalance(address(mockToken)), 0);
+        assertEq(project.getDonatedTokens().length, 0);
+        assertEq(address(project).balance, 0);
+    }
+
+    function test_ReleaseFunds_MultipleTokens() public {
+        address projectAddr = _createProject();
+        AquaFundProject project = AquaFundProject(payable(projectAddr));
+        
+        MockERC20 token2 = new MockERC20();
+        factory.addAllowedToken(address(token2));
+        token2.mint(donor, 2000 * 10**18);
+
+        uint256 token1Amount = 3000 * 10**18;
+        uint256 token2Amount = 2000 * 10**18;
+
+        vm.startPrank(donor);
+        mockToken.approve(address(project), token1Amount);
+        project.donateToken(address(mockToken), token1Amount);
+        token2.approve(address(project), token2Amount);
+        project.donateToken(address(token2), token2Amount);
+        vm.stopPrank();
+
+        vm.prank(admin);
+        project.releaseFunds();
+
+        // Verify both tokens released
+        assertEq(mockToken.balanceOf(admin), token1Amount * 9 / 10);
+        assertEq(token2.balanceOf(admin), token2Amount * 9 / 10);
+        assertEq(project.getDonatedTokens().length, 0);
+    }
+
+    function test_RefundDonor_WithTokens() public {
+        address projectAddr = _createProject();
+        AquaFundProject project = AquaFundProject(payable(projectAddr));
+        uint256 tokenAmount = 1000 * 10**18;
+
+        // Donate ETH and tokens
+        vm.startPrank(donor);
+        project.donate{value: DONATION_AMOUNT}();
+        mockToken.approve(address(project), tokenAmount);
+        project.donateToken(address(mockToken), tokenAmount);
+        vm.stopPrank();
+
+        // Cancel project
+        vm.prank(admin);
+        project.updateStatus(IAquaFundProject.ProjectStatus.Cancelled);
+
+        uint256 donorEthBefore = donor.balance;
+        uint256 donorTokenBefore = mockToken.balanceOf(donor);
+
+        // Refund donor
+        vm.prank(admin);
+        project.refundDonor(donor);
+
+        // Verify both ETH and tokens refunded
+        assertEq(donor.balance - donorEthBefore, DONATION_AMOUNT);
+        assertEq(mockToken.balanceOf(donor) - donorTokenBefore, tokenAmount);
+        assertEq(project.getDonation(donor), 0);
+        assertEq(project.getTokenDonation(donor, address(mockToken)), 0);
+    }
+
+    function test_RefundAllDonors_WithTokens() public {
+        address projectAddr = _createProject();
+        AquaFundProject project = AquaFundProject(payable(projectAddr));
+        
+        address donor2 = address(0x4);
+        vm.deal(donor2, 100 ether);
+        mockToken.mint(donor2, 1000 * 10**18);
+
+        uint256 tokenAmount = 500 * 10**18;
+
+        // Donor 1: ETH only
+        vm.prank(donor);
+        project.donate{value: DONATION_AMOUNT}();
+
+        // Donor 2: Tokens only
+        vm.startPrank(donor2);
+        mockToken.approve(address(project), tokenAmount);
+        project.donateToken(address(mockToken), tokenAmount);
+        vm.stopPrank();
+
+        // Cancel project
+        vm.prank(admin);
+        project.updateStatus(IAquaFundProject.ProjectStatus.Cancelled);
+
+        uint256 donor1EthBefore = donor.balance;
+        uint256 donor2TokenBefore = mockToken.balanceOf(donor2);
+
+        // Refund all
+        vm.prank(admin);
+        project.refundAllDonors();
+
+        // Verify refunds
+        assertEq(donor.balance - donor1EthBefore, DONATION_AMOUNT);
+        assertEq(mockToken.balanceOf(donor2) - donor2TokenBefore, tokenAmount);
+    }
+
+    function test_GetTokenDonation() public {
+        address projectAddr = _createProject();
+        AquaFundProject project = AquaFundProject(payable(projectAddr));
+        uint256 amount = 1000 * 10**18;
+
+        vm.startPrank(donor);
+        mockToken.approve(address(project), amount);
+        project.donateToken(address(mockToken), amount);
+        vm.stopPrank();
+
+        assertEq(project.getTokenDonation(donor, address(mockToken)), amount);
+        assertEq(project.getTokenDonation(donor, address(0x999)), 0); // Non-existent token
+    }
+
+    function test_GetEthBalance() public {
+        address projectAddr = _createProject();
+        AquaFundProject project = AquaFundProject(payable(projectAddr));
+
+        assertEq(project.getEthBalance(), 0);
+
+        vm.prank(donor);
+        project.donate{value: DONATION_AMOUNT}();
+
+        assertEq(project.getEthBalance(), DONATION_AMOUNT);
+        assertEq(project.getEthBalance(), address(project).balance);
+    }
+
     // Helper function
     function _createProject() internal returns (address) {
         vm.prank(admin);
         factory.grantRole(factory.PROJECT_CREATOR_ROLE(), admin);
 
         vm.prank(admin);
-        return factory.createProject(admin, FUNDING_GOAL, METADATA_URI);
+        return factory.createProject(
+            admin,           // admin
+            admin,           // creator
+            FUNDING_GOAL,    // fundingGoal
+            "Test Project", // title
+            "Test Description", // description
+            new string[](0), // images
+            "Test Location", // location
+            "Test Category"  // category
+        );
     }
 }
 

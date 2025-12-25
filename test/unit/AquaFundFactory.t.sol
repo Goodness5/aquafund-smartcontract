@@ -64,9 +64,14 @@ contract AquaFundFactoryTest is Test {
     function test_CreateProject() public {
         vm.prank(projectCreator);
         address projectAddr = factory.createProject(
-            admin,
-            FUNDING_GOAL,
-            METADATA_URI
+            admin,              // admin
+            projectCreator,     // creator
+            FUNDING_GOAL,       // fundingGoal
+            "Test Project",     // title
+            "Test Description", // description
+            new string[](0),   // images
+            "Test Location",    // location
+            "Test Category"     // category
         );
 
         assertTrue(projectAddr != address(0));
@@ -77,7 +82,9 @@ contract AquaFundFactoryTest is Test {
     function test_CreateProject_Unauthorized() public {
         vm.prank(address(0x999));
         vm.expectRevert();
-        factory.createProject(admin, FUNDING_GOAL, METADATA_URI);
+        factory.createProject(
+            admin, projectCreator, FUNDING_GOAL, "Test", "Desc", new string[](0), "Loc", "Cat"
+        );
     }
 
     function test_AddAllowedToken() public {
@@ -99,7 +106,9 @@ contract AquaFundFactoryTest is Test {
 
     function test_RecordDonation() public {
         vm.prank(projectCreator);
-        address projectAddr = factory.createProject(admin, FUNDING_GOAL, METADATA_URI);
+        address projectAddr = factory.createProject(
+            admin, projectCreator, FUNDING_GOAL, "Test", "Desc", new string[](0), "Loc", "Cat"
+        );
 
         AquaFundProject project = AquaFundProject(payable(projectAddr));
         vm.deal(donor, 10 ether);
@@ -121,7 +130,9 @@ contract AquaFundFactoryTest is Test {
 
     function test_GetLeaderboard() public {
         vm.prank(projectCreator);
-        address projectAddr = factory.createProject(admin, FUNDING_GOAL, METADATA_URI);
+        address projectAddr = factory.createProject(
+            admin, projectCreator, FUNDING_GOAL, "Test", "Desc", new string[](0), "Loc", "Cat"
+        );
 
         AquaFundProject project = AquaFundProject(payable(projectAddr));
         address donor2 = address(0x6);
@@ -150,7 +161,9 @@ contract AquaFundFactoryTest is Test {
 
     function test_GetPlatformStats() public {
         vm.prank(projectCreator);
-        address projectAddr = factory.createProject(admin, FUNDING_GOAL, METADATA_URI);
+        address projectAddr = factory.createProject(
+            admin, projectCreator, FUNDING_GOAL, "Test", "Desc", new string[](0), "Loc", "Cat"
+        );
 
         AquaFundProject project = AquaFundProject(payable(projectAddr));
         vm.deal(donor, 10 ether);
@@ -173,7 +186,9 @@ contract AquaFundFactoryTest is Test {
 
     function test_MintBadgeForDonor() public {
         vm.prank(projectCreator);
-        address projectAddr = factory.createProject(admin, FUNDING_GOAL, METADATA_URI);
+        address projectAddr = factory.createProject(
+            admin, projectCreator, FUNDING_GOAL, "Test", "Desc", new string[](0), "Loc", "Cat"
+        );
 
         AquaFundProject project = AquaFundProject(payable(projectAddr));
         vm.deal(donor, 10 ether);
@@ -226,10 +241,14 @@ contract AquaFundFactoryTest is Test {
         vm.prank(admin);
         vm.prank(projectCreator);
         vm.expectRevert();
-        factory.createProject(admin, FUNDING_GOAL, METADATA_URI);
+        factory.createProject(
+            admin, projectCreator, FUNDING_GOAL, "Test", "Desc", new string[](0), "Loc", "Cat"
+        );
         vm.prank(admin);
         vm.prank(projectCreator);
-        address projectAddr = factory.createProject(admin, FUNDING_GOAL, METADATA_URI);
+        address projectAddr = factory.createProject(
+            admin, projectCreator, FUNDING_GOAL, "Test", "Desc", new string[](0), "Loc", "Cat"
+        );
         assertTrue(projectAddr != address(0));
     }
 }

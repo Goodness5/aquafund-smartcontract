@@ -22,11 +22,21 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
     // Factory contract reference (set during initialization)
     IAquaFundFactory public factory;
     
+    // Platform admin oversight - stored for gas efficiency
+    address public platformAdmin;
+    
+    // Donation pause state
+    bool public donationsPaused;
+    
     // Donation tracking - using mappings for O(1) access
     mapping(address => uint256) private _donations; // donor => total donated
     mapping(address => uint256) private _ethDonations; // donor => ETH donated
-    mapping(address => uint256) private _tokenDonations; // donor => token donated (indexed by token address)
+    mapping(address => mapping(address => uint256)) private _tokenDonationsByDonor; // donor => token => amount
     address[] private _donors; // Array of unique donors
+    
+    // Token escrow tracking - tracks which tokens are held in escrow
+    mapping(address => uint256) private _tokenBalances; // token => total amount held
+    address[] private _donatedTokens; // Array of unique token addresses that received donations
     
     // Evidence tracking
     Evidence[] private _evidence;
@@ -50,19 +60,64 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
     error NoDonationsToRefund();
     error TransferFailed();
     error TokenNotAllowed();
+    error DonationsPaused();
 
     modifier onlyFactory() {
         if (msg.sender != address(factory)) revert UnauthorizedAccess();
         _;
     }
 
+    /**
+     * @dev Check if caller is project creator or admin (NGO level access)
+     */
+    modifier onlyProjectCreatorOrAdmin() {
+        bool isProjectAdmin = msg.sender == _projectInfo.admin;
+        bool isProjectCreator = msg.sender == _projectInfo.creator;
+        if (!isProjectAdmin && !isProjectCreator) revert UnauthorizedAccess();
+        _;
+    }
+
+    /**
+     * @dev Check if caller is platform admin (organization level - ultimate control)
+     */
+    modifier onlyPlatformAdmin() {
+        bool isPlatformAdmin = msg.sender == platformAdmin || 
+                              (address(factory) != address(0) && msg.sender == factory.owner());
+        if (!isPlatformAdmin) revert UnauthorizedAccess();
+        _;
+    }
+
+    /**
+     * @dev Check if caller is project creator/admin OR platform admin
+     * Project creator/admin (NGO) has same level access for their projects
+     * Platform admin (organization) has ultimate control
+     */
+    modifier onlyAdminOrPlatformAdmin() {
+        bool isProjectAdmin = msg.sender == _projectInfo.admin;
+        bool isProjectCreator = msg.sender == _projectInfo.creator;
+        bool isPlatformAdmin = msg.sender == platformAdmin || 
+                              (address(factory) != address(0) && msg.sender == factory.owner());
+        if (!isProjectAdmin && !isProjectCreator && !isPlatformAdmin) revert UnauthorizedAccess();
+        _;
+    }
+
     modifier onlyAdmin() {
-        if (msg.sender != _projectInfo.admin) revert UnauthorizedAccess();
+        // Project admin, creator, or platform admin
+        bool isProjectAdmin = msg.sender == _projectInfo.admin;
+        bool isProjectCreator = msg.sender == _projectInfo.creator;
+        bool isPlatformAdmin = msg.sender == platformAdmin || 
+                              (address(factory) != address(0) && msg.sender == factory.owner());
+        if (!isProjectAdmin && !isProjectCreator && !isPlatformAdmin) revert UnauthorizedAccess();
         _;
     }
 
     modifier onlyWhenInitialized() {
         if (!_initialized) revert NotInitialized();
+        _;
+    }
+
+    modifier whenDonationsNotPaused() {
+        if (donationsPaused) revert DonationsPaused();
         _;
     }
 
@@ -107,6 +162,9 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
             factory = IAquaFundFactory(msg.sender);
         }
 
+        // Set platform admin (factory owner has ADMIN_ROLE)
+        platformAdmin = factory.owner();
+
         uint64 timestamp = uint64(block.timestamp);
 
         // Initialize all ProjectInfo fields during project creation
@@ -116,7 +174,7 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
         // createdAt, and updatedAt timestamps
         _projectInfo = ProjectInfo({
             projectId: uint128(_projectId),      // From factory (auto-incremented)
-            admin: _admin,                       // Project administrator
+            admin: _admin,                       // Project administrator (NGO)
             creator: _creator,                   // Address that created the project
             fundingGoal: _fundingGoal,          // Funding target in wei
             fundsRaised: 0,                      // Starts at zero
@@ -130,6 +188,7 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
             updatedAt: timestamp                 // Last update timestamp
         });
 
+        donationsPaused = false;
         _initialized = true;
         _transferOwnership(_admin);
 
@@ -139,7 +198,7 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
     /**
      * @dev Accept ETH donations
      */
-    function donate() external payable nonReentrant onlyWhenInitialized {
+    function donate() external payable nonReentrant onlyWhenInitialized whenDonationsNotPaused {
         _handleEthDonation();
     }
 
@@ -171,7 +230,7 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
     function donateToken(
         address token,
         uint256 amount
-    ) external nonReentrant onlyWhenInitialized {
+    ) external nonReentrant onlyWhenInitialized whenDonationsNotPaused {
         if (_projectInfo.status != ProjectStatus.Active) {
             revert InvalidStatusTransition();
         }
@@ -185,10 +244,18 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
             }
         }
 
+        // Transfer token to this contract (escrow)
         IERC20(token).safeTransferFrom(msg.sender, address(this), amount);
 
+        // Track token donations per donor
+        bool isNewToken = _tokenBalances[token] == 0;
+        if (isNewToken) {
+            _donatedTokens.push(token);
+        }
+        _tokenBalances[token] += amount;
+        _tokenDonationsByDonor[msg.sender][token] += amount;
+
         _processDonation(msg.sender, amount, false);
-        _tokenDonations[msg.sender] += amount;
 
         emit DonationReceived(
             _projectInfo.projectId,
@@ -251,9 +318,11 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
     }
 
     /**
-     * @dev Release funds to project admin (10% service fee deducted)
+     * @dev Release funds to project admin (service fee deducted)
+     * Releases both ETH and all ERC20 tokens held in escrow
+     * Can be called by project admin or platform admin
      */
-    function releaseFunds() external nonReentrant onlyAdmin onlyWhenInitialized {
+    function releaseFunds() external nonReentrant onlyAdminOrPlatformAdmin onlyWhenInitialized {
         if (_projectInfo.status != ProjectStatus.Funded) {
             if (_projectInfo.fundsRaised < _projectInfo.fundingGoal) {
                 revert FundingGoalNotReached();
@@ -263,39 +332,79 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
             revert FundsAlreadyReleased();
         }
 
-        uint256 totalAmount = address(this).balance;
-        uint256 serviceFee = (totalAmount * factory.getServiceFee()) / 10000; // basis points
-        uint256 netAmount = totalAmount - serviceFee;
+        address treasury = factory.getTreasury();
+        uint256 serviceFeeBps = factory.getServiceFee();
+
+        // Release ETH with service fee
+        uint256 ethBalance = address(this).balance;
+        if (ethBalance > 0) {
+            uint256 ethServiceFee = (ethBalance * serviceFeeBps) / 10000;
+            uint256 ethNetAmount = ethBalance - ethServiceFee;
+
+            // Transfer service fee to treasury
+            if (treasury != address(0) && ethServiceFee > 0) {
+                (bool success, ) = payable(treasury).call{value: ethServiceFee}("");
+                if (!success) revert TransferFailed();
+            }
+
+            // Transfer remaining ETH to admin
+            if (ethNetAmount > 0) {
+                (bool successAdmin, ) = payable(_projectInfo.admin).call{value: ethNetAmount}("");
+                if (!successAdmin) revert TransferFailed();
+            }
+        }
+
+        // Release all ERC20 tokens with service fee
+        uint256 tokenCount = _donatedTokens.length;
+        for (uint256 i = 0; i < tokenCount; ) {
+            address token = _donatedTokens[i];
+            uint256 tokenBalance = _tokenBalances[token];
+            
+            if (tokenBalance > 0) {
+                uint256 tokenServiceFee = (tokenBalance * serviceFeeBps) / 10000;
+                uint256 tokenNetAmount = tokenBalance - tokenServiceFee;
+
+                // Transfer service fee to treasury
+                if (treasury != address(0) && tokenServiceFee > 0) {
+                    IERC20(token).safeTransfer(treasury, tokenServiceFee);
+                }
+
+                // Transfer remaining tokens to admin
+                if (tokenNetAmount > 0) {
+                    IERC20(token).safeTransfer(_projectInfo.admin, tokenNetAmount);
+                }
+
+                // Clear token balance tracking
+                _tokenBalances[token] = 0;
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Clear token list
+        delete _donatedTokens;
 
         _projectInfo.status = ProjectStatus.Completed;
         _projectInfo.updatedAt = uint64(block.timestamp);
 
-        // Transfer service fee to treasury
-        address treasury = factory.getTreasury();
-        if (treasury != address(0) && serviceFee > 0) {
-            (bool success, ) = payable(treasury).call{value: serviceFee}("");
-            if (!success) revert TransferFailed();
-        }
-
-        // Transfer remaining funds to admin
-        (bool successAdmin, ) = payable(_projectInfo.admin).call{value: netAmount}("");
-        if (!successAdmin) revert TransferFailed();
-
         emit FundsReleased(
             _projectInfo.projectId,
             _projectInfo.admin,
-            netAmount,
-            serviceFee
+            ethBalance,
+            (ethBalance * serviceFeeBps) / 10000
         );
     }
 
     /**
      * @dev Submit evidence for project completion
      * @param _evidenceHash Evidence hash or URI
+     * Can be called by project admin or platform admin
      */
     function submitEvidence(
         string memory _evidenceHash
-    ) external onlyAdmin onlyWhenInitialized {
+    ) external onlyAdminOrPlatformAdmin onlyWhenInitialized {
         _evidence.push(
             Evidence({
                 evidenceHash: _evidenceHash,
@@ -315,10 +424,11 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
     /**
      * @dev Update project status
      * @param _newStatus New status to set
+     * Can be called by project admin or platform admin
      */
     function updateStatus(
         ProjectStatus _newStatus
-    ) external onlyAdmin onlyWhenInitialized {
+    ) external onlyAdminOrPlatformAdmin onlyWhenInitialized {
         ProjectStatus oldStatus = _projectInfo.status;
         
         // Validate status transition
@@ -350,12 +460,13 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
     }
 
     /**
-     * @dev Refund a specific donor
+     * @dev Refund a specific donor (both ETH and tokens)
      * @param donor Address of donor to refund
+     * Can be called by project admin or platform admin
      */
     function refundDonor(
         address donor
-    ) external nonReentrant onlyAdmin onlyWhenInitialized {
+    ) external nonReentrant onlyAdminOrPlatformAdmin onlyWhenInitialized {
         uint256 donationAmount = _donations[donor];
         if (donationAmount == 0) revert NoDonationsToRefund();
         if (_projectInfo.status != ProjectStatus.Cancelled) {
@@ -365,6 +476,7 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
         _donations[donor] = 0;
         _projectInfo.fundsRaised -= donationAmount;
 
+        // Refund ETH
         uint256 ethAmount = _ethDonations[donor];
         if (ethAmount > 0) {
             _ethDonations[donor] = 0;
@@ -372,29 +484,26 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
             if (!success) revert TransferFailed();
         }
 
-        emit RefundIssued(_projectInfo.projectId, donor, donationAmount);
-    }
-
-    /**
-     * @dev Refund all donors (emergency function)
-     */
-    function refundAllDonors() external nonReentrant onlyAdmin onlyWhenInitialized {
-        if (_projectInfo.status != ProjectStatus.Cancelled) {
-            revert InvalidStatusTransition();
-        }
-
-        uint256 donorCount = _donors.length;
-        for (uint256 i = 0; i < donorCount; ) {
-            address donor = _donors[i];
-            uint256 ethAmount = _ethDonations[donor];
+        // Refund all tokens donated by this donor
+        uint256 tokenCount = _donatedTokens.length;
+        for (uint256 i = 0; i < tokenCount; ) {
+            address token = _donatedTokens[i];
+            uint256 tokenAmount = _tokenDonationsByDonor[donor][token];
             
-            if (ethAmount > 0) {
-                _ethDonations[donor] = 0;
-                _donations[donor] = 0;
-                (bool success, ) = payable(donor).call{value: ethAmount}("");
-                if (!success) revert TransferFailed();
+            if (tokenAmount > 0) {
+                _tokenDonationsByDonor[donor][token] = 0;
+                _tokenBalances[token] -= tokenAmount;
                 
-                emit RefundIssued(_projectInfo.projectId, donor, ethAmount);
+                // If this was the last donation for this token, remove it from list
+                if (_tokenBalances[token] == 0) {
+                    // Swap with last element and pop
+                    _donatedTokens[i] = _donatedTokens[tokenCount - 1];
+                    _donatedTokens.pop();
+                    tokenCount--;
+                    i--; // Recheck this index
+                }
+                
+                IERC20(token).safeTransfer(donor, tokenAmount);
             }
 
             unchecked {
@@ -402,8 +511,70 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
             }
         }
 
+        emit RefundIssued(_projectInfo.projectId, donor, donationAmount);
+    }
+
+    /**
+     * @dev Refund all donors (emergency function) - both ETH and tokens
+     * Can be called by project admin or platform admin
+     */
+    function refundAllDonors() external nonReentrant onlyAdminOrPlatformAdmin onlyWhenInitialized {
+        if (_projectInfo.status != ProjectStatus.Cancelled) {
+            revert InvalidStatusTransition();
+        }
+
+        uint256 donorCount = _donors.length;
+        for (uint256 i = 0; i < donorCount; ) {
+            address donor = _donors[i];
+            uint256 totalDonationAmount = _donations[donor];
+            uint256 ethAmount = _ethDonations[donor];
+            
+            // Refund ETH
+            if (ethAmount > 0) {
+                _ethDonations[donor] = 0;
+                (bool success, ) = payable(donor).call{value: ethAmount}("");
+                if (!success) revert TransferFailed();
+            }
+
+            // Refund all tokens for this donor
+            uint256 donorTokenCount = _donatedTokens.length;
+            for (uint256 j = 0; j < donorTokenCount; ) {
+                address token = _donatedTokens[j];
+                uint256 tokenAmount = _tokenDonationsByDonor[donor][token];
+                
+                if (tokenAmount > 0) {
+                    _tokenDonationsByDonor[donor][token] = 0;
+                    _tokenBalances[token] -= tokenAmount;
+                    
+                    IERC20(token).safeTransfer(donor, tokenAmount);
+                }
+
+                unchecked {
+                    ++j;
+                }
+            }
+
+            _donations[donor] = 0;
+            emit RefundIssued(_projectInfo.projectId, donor, totalDonationAmount);
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        // Clear all tracking
         _projectInfo.fundsRaised = 0;
         delete _donors;
+        
+        // Clear token balances before deleting array
+        uint256 tokenCount = _donatedTokens.length;
+        for (uint256 i = 0; i < tokenCount; ) {
+            delete _tokenBalances[_donatedTokens[i]];
+            unchecked {
+                ++i;
+            }
+        }
+        delete _donatedTokens;
     }
 
     /**
@@ -481,11 +652,132 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
     }
 
     /**
+     * @dev Get token balance held in escrow for a specific token
+     * @param token Token contract address
+     * @return balance Amount of tokens held in escrow
+     */
+    function getTokenBalance(address token) external view onlyWhenInitialized returns (uint256) {
+        return _tokenBalances[token];
+    }
+
+    /**
+     * @dev Get all tokens that have received donations
+     * @return tokens Array of token addresses
+     */
+    function getDonatedTokens() external view onlyWhenInitialized returns (address[] memory) {
+        return _donatedTokens;
+    }
+
+    /**
+     * @dev Get token donation amount for a specific donor and token
+     * @param donor Address of donor
+     * @param token Token contract address
+     * @return amount Amount of tokens donated by this donor
+     */
+    function getTokenDonation(address donor, address token) 
+        external 
+        view 
+        onlyWhenInitialized 
+        returns (uint256) 
+    {
+        return _tokenDonationsByDonor[donor][token];
+    }
+
+    /**
+     * @dev Get ETH balance held in escrow
+     * @return balance Amount of ETH held in escrow
+     */
+    function getEthBalance() external view onlyWhenInitialized returns (uint256) {
+        return address(this).balance;
+    }
+
+    /**
+     * @dev Pause donations (can be called by project creator/admin or platform admin)
+     */
+    function pauseDonations() external onlyAdminOrPlatformAdmin onlyWhenInitialized {
+        donationsPaused = true;
+        emit ProjectStatusChanged(
+            _projectInfo.projectId,
+            _projectInfo.status,
+            _projectInfo.status // Status doesn't change, just pause state
+        );
+    }
+
+    /**
+     * @dev Unpause donations (can be called by project creator/admin or platform admin)
+     */
+    function unpauseDonations() external onlyAdminOrPlatformAdmin onlyWhenInitialized {
+        donationsPaused = false;
+        emit ProjectStatusChanged(
+            _projectInfo.projectId,
+            _projectInfo.status,
+            _projectInfo.status // Status doesn't change, just pause state
+        );
+    }
+
+    /**
+     * @dev End project after goal reached (can be called by project creator/admin or platform admin)
+     * This allows manually ending a project even if goal is reached
+     */
+    function endProject() external onlyAdminOrPlatformAdmin onlyWhenInitialized {
+        if (_projectInfo.status != ProjectStatus.Active && _projectInfo.status != ProjectStatus.Funded) {
+            revert InvalidStatusTransition();
+        }
+        if (_projectInfo.fundsRaised < _projectInfo.fundingGoal) {
+            revert FundingGoalNotReached();
+        }
+        
+        ProjectStatus oldStatus = _projectInfo.status;
+        _projectInfo.status = ProjectStatus.Funded;
+        _projectInfo.updatedAt = uint64(block.timestamp);
+        
+        emit ProjectStatusChanged(
+            _projectInfo.projectId,
+            oldStatus,
+            ProjectStatus.Funded
+        );
+    }
+
+    /**
+     * @dev Remove/Delete project (ONLY platform admin - ultimate control)
+     * This permanently marks the project as removed and prevents further operations
+     * Funds should be refunded before removal
+     */
+    function removeProject() external onlyPlatformAdmin onlyWhenInitialized {
+        // Mark as cancelled if not already
+        if (_projectInfo.status != ProjectStatus.Cancelled && 
+            _projectInfo.status != ProjectStatus.Completed &&
+            _projectInfo.status != ProjectStatus.Refunded) {
+            ProjectStatus oldStatus = _projectInfo.status;
+            _projectInfo.status = ProjectStatus.Cancelled;
+            _projectInfo.updatedAt = uint64(block.timestamp);
+            
+            emit ProjectStatusChanged(
+                _projectInfo.projectId,
+                oldStatus,
+                ProjectStatus.Cancelled
+            );
+        }
+        
+        // Pause donations permanently
+        donationsPaused = true;
+        
+        emit ProjectStatusChanged(
+            _projectInfo.projectId,
+            _projectInfo.status,
+            _projectInfo.status
+        );
+    }
+
+    /**
      * @dev Receive ETH - automatically processes donation
      */
     receive() external payable nonReentrant {
         if (!_initialized) {
             revert NotInitialized();
+        }
+        if (donationsPaused) {
+            revert DonationsPaused();
         }
         _handleEthDonation();
     }
