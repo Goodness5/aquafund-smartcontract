@@ -185,25 +185,6 @@ contract AquaFundFactory is
     }
 
     /**
-     * @dev Remove a project (ONLY platform admin - ultimate control)
-     * This allows platform admins to remove projects from the system
-     * @param projectId Project ID to remove
-     */
-    function removeProject(uint256 projectId) external onlyRole(ADMIN_ROLE) {
-        address projectAddr = _projects[projectId];
-        if (projectAddr == address(0)) revert ProjectNotExists();
-        
-        // Call removeProject on the project contract
-        AquaFundProject(payable(projectAddr)).removeProject();
-        
-        // Optionally: Remove from mappings (but keep for historical record)
-        // For now, we keep the project in mappings but mark it as removed
-        // This allows historical tracking while preventing new operations
-        
-        emit ProjectCreated(projectId, projectAddr, address(0), 0); // Emit removal event
-    }
-
-    /**
      * @dev Get total number of projects created
      * @return Total project count
      */
