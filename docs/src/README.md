@@ -8,18 +8,18 @@ AquaFund is a decentralized crowdfunding platform built on BNB Smart Chain (BSC)
 
 ## Deployed Contracts (BSC Testnet)
 
-All contracts are deployed and verified on BSC Testnet (Chain ID: 97):
+All contracts are deployed on BSC Testnet (Chain ID: 97):
 
-- **AquaFundProject (Implementation)**: [`0xFed99A6362fc4bDb4776Ec61Bb7612d5bf278CbF`](https://testnet.bscscan.com/address/0xFed99A6362fc4bDb4776Ec61Bb7612d5bf278CbF)
+- **AquaFundProject (Implementation)**: [`0xAAf4D1d91D486a7C252B2e797e05fB3db8aedf8D`](https://testnet.bscscan.com/address/0xAAf4D1d91D486a7C252B2e797e05fB3db8aedf8D)
   - Implementation contract used as a template for creating project clones
 
-- **AquaFundFactory**: [`0x4c2aFA6e54024AB86168662AeAF5b295a2FF6E4C`](https://testnet.bscscan.com/address/0x4c2aFA6e54024AB86168662AeAF5b295a2FF6E4C)
+- **AquaFundFactory**: [`0x76F348766973BD06ACf88977CFEEf317B39d2cC8`](https://testnet.bscscan.com/address/0x76F348766973BD06ACf88977CFEEf317B39d2cC8)
   - Main factory contract for creating and managing projects
 
-- **AquaFundBadge**: [`0xee508704a55e1b623aB643E6A694Dbfe8355C157`](https://testnet.bscscan.com/address/0xee508704a55e1b623aB643E6A694Dbfe8355C157)
+- **AquaFundBadge**: [`0x102ea409d06cF3277BB9f3b96E9a3092C8D85fC5`](https://testnet.bscscan.com/address/0x102ea409d06cF3277BB9f3b96E9a3092C8D85fC5)
   - ERC721 NFT contract for donor badges
 
-- **AquaFundRegistry**: [`0x86e63f4c3C132AA0fEA1B2980b7E8191f4Ee4825`](https://testnet.bscscan.com/address/0x86e63f4c3C132AA0fEA1B2980b7E8191f4Ee4825)
+- **AquaFundRegistry**: [`0xa7923939F118C6C21B7174ccf6CA649f2C00cDBD`](https://testnet.bscscan.com/address/0xa7923939F118C6C21B7174ccf6CA649f2C00cDBD)
   - Centralized registry for project discovery and analytics
 
 ## Key Features

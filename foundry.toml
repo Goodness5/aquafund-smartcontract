@@ -8,6 +8,9 @@ via_ir = true
 solc_version = "0.8.24"
 # evm_version = "paris"
 
+# Default RPC for forge create/cast (avoids localhost when .env has RPC_URL=localhost)
+eth_rpc_url = "https://data-seed-prebsc-1-s1.binance.org:8545"
+
 # Ignore init-code-size errors (contracts may exceed 24KB during deployment)
 # This is acceptable for implementation contracts that will be cloned
 ignored_error_codes = [3860]

@@ -2,7 +2,7 @@
 
 The `AquaFundFactory` is the main entry point for the AquaFund platform. It creates new projects, manages platform settings, and tracks global statistics.
 
-**Deployed Address (BSC Testnet)**: [`0x4c2aFA6e54024AB86168662AeAF5b295a2FF6E4C`](https://testnet.bscscan.com/address/0x4c2aFA6e54024AB86168662AeAF5b295a2FF6E4C)
+**Deployed Address (BSC Testnet)**: [`0x76F348766973BD06ACf88977CFEEf317B39d2cC8`](https://testnet.bscscan.com/address/0x76F348766973BD06ACf88977CFEEf317B39d2cC8)
 
 ## Overview
 

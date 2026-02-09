@@ -2,7 +2,7 @@
 
 The `AquaFundBadge` contract is an ERC721 NFT contract that mints badges to donors based on their donation amounts. Badges serve as rewards and proof of contribution.
 
-**Deployed Address (BSC Testnet)**: [`0xee508704a55e1b623aB643E6A694Dbfe8355C157`](https://testnet.bscscan.com/address/0xee508704a55e1b623aB643E6A694Dbfe8355C157)
+**Deployed Address (BSC Testnet)**: [`0x102ea409d06cF3277BB9f3b96E9a3092C8D85fC5`](https://testnet.bscscan.com/address/0x102ea409d06cF3277BB9f3b96E9a3092C8D85fC5)
 
 ## Overview
 

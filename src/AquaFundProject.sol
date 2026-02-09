@@ -82,7 +82,7 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
      */
     modifier onlyPlatformAdmin() {
         bool isPlatformAdmin = msg.sender == platformAdmin || 
-                              (address(factory) != address(0) && msg.sender == factory.owner());
+                              (address(factory) != address(0) && msg.sender == factory.getPlatformAdmin());
         if (!isPlatformAdmin) revert UnauthorizedAccess();
         _;
     }
@@ -96,7 +96,7 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
         bool isProjectAdmin = msg.sender == _projectInfo.admin;
         bool isProjectCreator = msg.sender == _projectInfo.creator;
         bool isPlatformAdmin = msg.sender == platformAdmin || 
-                              (address(factory) != address(0) && msg.sender == factory.owner());
+                              (address(factory) != address(0) && msg.sender == factory.getPlatformAdmin());
         if (!isProjectAdmin && !isProjectCreator && !isPlatformAdmin) revert UnauthorizedAccess();
         _;
     }
@@ -106,7 +106,7 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
         bool isProjectAdmin = msg.sender == _projectInfo.admin;
         bool isProjectCreator = msg.sender == _projectInfo.creator;
         bool isPlatformAdmin = msg.sender == platformAdmin || 
-                              (address(factory) != address(0) && msg.sender == factory.owner());
+                              (address(factory) != address(0) && msg.sender == factory.getPlatformAdmin());
         if (!isProjectAdmin && !isProjectCreator && !isPlatformAdmin) revert UnauthorizedAccess();
         _;
     }
@@ -163,7 +163,7 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
         }
 
         // Set platform admin (factory owner has ADMIN_ROLE)
-        platformAdmin = factory.owner();
+        platformAdmin = factory.getPlatformAdmin();
 
         uint64 timestamp = uint64(block.timestamp);
 
@@ -235,7 +235,7 @@ contract AquaFundProject is IAquaFundProject, ReentrancyGuard, Ownable {
             revert InvalidStatusTransition();
         }
         if (token == address(0)) revert InvalidAddress();
-        if (amount < MIN_DONATION) revert InvalidAmount();
+        // if (amount < MIN_DONATION) revert InvalidAmount();
 
         // Check if token is allowed via factory
         if (address(factory) != address(0)) {

@@ -355,6 +355,13 @@ contract AquaFundFactory is
     }
 
     /**
+     * @dev Get platform admin address (factory owner)
+     */
+    function getPlatformAdmin() external view returns (address) {
+        return owner();
+    }
+
+    /**
      * @dev Get all project IDs for a range (for pagination)
      * @param start Starting index
      * @param end Ending index
